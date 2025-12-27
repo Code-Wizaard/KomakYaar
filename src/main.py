@@ -6,13 +6,16 @@ import json
 import re
 import ast
 import os
+from dotenv import load_dotenv
 logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
 
+load_dotenv()
 API_TOKEN = os.getenv("TOKEN")
 bot = TeleBot(API_TOKEN)
 me = bot.get_me()
 
 DB_PATH = "groups.db"
+SWEARS_PATH = "swears.txt"
 
 HELP_TEXT = (
     "📖 راهنمای استفاده از ربات کمک‌یار\n\n"
@@ -577,7 +580,7 @@ def handle_messages(message:types.Message):
     chat_id = message.chat.id
     user_id = message.from_user.id
     text = (message.text or "")
-    file = open("swears.txt", "r")
+    file = open(SWEARS_PATH, "r")
     swears = []
 
     for word in text.split(" "):
@@ -797,6 +800,6 @@ def handle_messages(message:types.Message):
 
 
 # ---------------- RUN ----------------
-print(f"🤖 {me.username} Group Helper running...")
+print(f"{me.username} Group Helper running...")
 bot.polling(none_stop=True, skip_pending=True)
 
