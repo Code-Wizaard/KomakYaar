@@ -496,7 +496,7 @@ def greet(message):
         همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
         لینک پروژه :
         https://github.com/Code-Wizaard/KomakYaar
-        """, parse_mode="Markdown")
+        """, parse_mode="Markdown", disable_web_page_preview=True)
         return
 
     con = db()
@@ -614,6 +614,7 @@ def pv_chats(message:types.Message):
     https://github.com/Code-Wizaard/KomakYaar
     """,
             parse_mode="Markdown",
+            disable_web_page_preview=True
             reply_markup=start_keyboard
     )
     elif message.text == "/help":
