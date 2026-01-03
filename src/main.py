@@ -99,6 +99,13 @@ def init_db():
         ailas TEXT
     )
     """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS warnings (
+        group_id INTEGER,
+        user_id INTEGER,
+        warnings INTEGER,
+    )
+    """)
 
 
     con.commit()
@@ -305,6 +312,46 @@ def remove_punishment(group_id, user_id, p_type):
     con.commit()
     con.close()
 
+def set_warn_maximum(group_id, max):
+    con = db()
+    cur = con.cursor()
+    set_group_setting(group_id, "WARN_MAXIMUM", max)
+    con.commit()
+    con.close()
+
+def set_warn_punishment(group_id, punishment):
+    con = db()
+    cur = con.cursor()
+    set_group_setting(group_id, "WARN_PUNISHMENT", punishment)
+    con.commit()
+    con.close()
+
+def get_user_warnings(group_id, user_id):
+    con = db()
+    cur = con.cursor()
+    cur.execute("SELECT warnings FROM warnings WHERE group_id=? AND user_id=?", (group_id, user_id))
+    row = cur.fetchone()
+    return row[0] if row else 3
+    
+
+def warn_user(group_id, user_id):
+    con = db()
+    cur = con.cursor()
+    cur.execute("SELECT * FROM warnings WHERE group_id=? AND user_id=?", (group_id, user_id))
+    if cur.fetchone():
+        cur.execute("UPDATE warnings SET warnings = warnings + 1 WHERE group_id=? AND user_id=?", (group_id, user_id))
+    else:
+        cur.execute("INSERT INTO warnings (group_id, user_id, warnings) VALUES (?, ?, 1)", (group_id, user_id))
+    con.commit()
+    con.close()
+
+def remove_all_warns(group_id, user_id):
+    con = db()
+    cur = con.cursor()
+    cur.execute("UPDATE warnings SET warnings = 0 WHERE group_id=? AND user_id=?", (group_id, user_id))
+    con.commit()
+    con.close()
+
 # ---------------- HANDLERS ----------------
 @bot.message_handler(func=lambda m: m.text == "فعال شو")
 def cmd_startgroup(message):
@@ -362,6 +409,7 @@ def active_swear_strict(message:types.Message):
         bot.reply_to(message, ":\\ گمشو از جلو چشام دور شو")
         return
     if int(get_group_setting(message.chat.id, "SWEAR_LOCK", -1)) in [-1, 1]:
+        set_group_setting(message.chat.id, "SWEAR_LOCK", 1)
         bot.reply_to(message, "همینطوریشم فعال هست ستونم")
     else:
         set_group_setting(message.chat.id, "SWEAR_LOCK", 1)
@@ -373,6 +421,7 @@ def active_swear_strict(message:types.Message):
         bot.reply_to(message, ":\\ گمشو از جلو چشام دور شو")
         return
     if int(get_group_setting(message.chat.id, "SWEAR_LOCK", -1)) in [-1, 0]:
+        set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
         bot.reply_to(message, "همینطوریشم غیرفعال هست ستونم")
     else:
         set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
@@ -608,6 +657,13 @@ def handle_messages(message:types.Message):
         if text == k:
             bot.reply_to(message, r)
             break
+
+    if text.startswith("سقف اخطار") and is_admin(chat_id, user_id):
+        words = text.split(" ")
+        words.remove("سقف")
+        words.remove("اخطار")
+        set_warn_maximum(chat_id, words[0])
+        bot.reply_to(message, "سقف اخطارها با موفقیت تنظیم شد")
     
     if text.startswith("حذف فیلتر") and is_admin(chat_id, user_id):
         # اگر ریپلای شده روی پیام کلیدواژه
@@ -754,6 +810,39 @@ def handle_messages(message:types.Message):
                     add_punishment(chat_id, target_id, "mute", int(time.time()+mins*60))
                     bot.reply_to(message, f"🔇 کاربر سکوت داده شد برای {mins} دقیقه.")
 
+        elif (text.startswith("اخطار")) and is_admin(chat_id, user_id):
+            if is_admin(chat_id, target_id):
+                bot.reply_to(message, "اخه کصمغز چرا باید ادمینو اخطار بدم")
+                return
+            warn_user(chat_id, target_id)
+            warns = get_user_warnings(chat_id, target_id)
+            warn_max = get_group_setting(chat_id, "WARN_MAXIMUM", 3)
+            bot.reply_to(message, f"کاربر با موفقیت اخطار داده شد! ⚠️\n اخطار های کاربر : {warns}/{warn_max}")
+            if warns >= warn_max:
+                punish = get_group_setting(chat_id, "WARN_PUNISHMENT", "kick")
+                if punish == "kick":
+                    bot.ban_chat_member(chat_id, target_id)
+                    bot.unban_chat_member(chat_id, target_id)
+                    add_punishment(chat_id, target_id, "kick")
+                    bot.reply_to(message, "👢 کاربر کیک شد!")
+                elif punish == "ban":
+                    bot.ban_chat_member(chat_id, target_id)
+                    add_punishment(chat_id, target_id, "ban")
+                    bot.reply_to(message, "⛔ کاربر بن شد!")
+                elif punish == "mute":
+                    bot.restrict_chat_member(chat_id, target_id, can_send_messages=False)
+                    bot.reply_to("کاربر میوت شد! 🤐")
+                remove_all_warns(chat_id, target_id)
+
+        elif (text == "حذف اخطارها") and is_admin(chat_id, user_id):
+            if is_admin(chat_id, target_id):
+                bot.reply_to("چیزی میزنی؟ اصلا مگه میتونم اخطار بدم که الان میگی حذف اخطار")
+                return
+            remove_all_warns(chat_id, target_id)
+            bot.reply_to(message, "شتر دیدی ندیدی! ✅")
+
+            
+
         # KICK
         elif (text == "ریم" or text == "کیک" or text == "سیک") and is_admin(chat_id, user_id):
             if is_admin(chat_id, target_id):
@@ -761,6 +850,7 @@ def handle_messages(message:types.Message):
                 return
             bot.ban_chat_member(chat_id, target_id)
             bot.unban_chat_member(chat_id, target_id)
+            add_punishment(chat_id, target_id, "kick")
             bot.reply_to(message, "👢 کاربر کیک شد!")
 
         # BAN
@@ -768,7 +858,7 @@ def handle_messages(message:types.Message):
             if is_admin(chat_id, target_id):
                 bot.reply_to(message, "پاول دوروفم نمیتونه ادمین بن کنه تو دیگه چه انتظاری داری")
                 return
-            bot.kick_chat_member(chat_id, target_id)
+            bot.ban_chat_member(chat_id, target_id)
             add_punishment(chat_id, target_id, "ban")
             bot.reply_to(message, "⛔ کاربر بن شد!")
 
