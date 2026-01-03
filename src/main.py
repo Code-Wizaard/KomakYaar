@@ -103,7 +103,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS warnings (
         group_id INTEGER,
         user_id INTEGER,
-        warnings INTEGER,
+        warnings INTEGER
     )
     """)
 
