@@ -375,7 +375,8 @@ def leaver(message):
 def send_help(message):
     try:
         bot.send_message(message.from_user.id, HELP_TEXT, reply_markup=help_keyboard)
-        bot.reply_to(message, "📬 پنل راهنما به پیوی شما ارسال شد!")
+        if message.chat.type != "private":
+            bot.reply_to(message, "📬 پنل راهنما به پیوی شما ارسال شد!")
     except:
         bot.reply_to(message, "⚠️ نمی‌تونم پیوی شما پیام بفرستم، لطفا دایرکت ربات رو باز کنید.")
 
@@ -746,7 +747,7 @@ def handle_messages(message:types.Message):
             for admin in admins:
                 if not admin.user.is_bot and admin.user.id != bot.get_me().id:
                     try:
-                        bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر [{message.from_user.first_name}](tg://user?id={user_id}) در گروه با ایدی {chat_id}\n فرد گزارش شده : [{target.first_name}](tg://user?id={target_id})\n متن پیام ارسالی :\n > {message.reply_to_message.text}", reply_markup=markup)
+                        bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر [{message.from_user.first_name}](tg://user?id={user_id}) در گروه با ایدی {chat_id}\n فرد گزارش شده : [{target.first_name}](tg://user?id={target_id})\n متن پیام ارسالی :\n > {message.reply_to_message.text}", reply_markup=markup, parse_mode="Markdown")
                     except:
                         pass
 
