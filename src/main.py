@@ -494,18 +494,6 @@ def all_filters(message:types.Message):
         string += f"{filter} : {response}\n"
     bot.reply_to(message, string)
 
-@bot.message_handler(func=lambda m: m.text.startswith("اکو "))
-def echo_word(message:types.Message):
-    toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
-    if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
-        return
-    echo = message.text[len("اکو"):].strip()
-    if message.reply_to_message:
-        bot.reply_to(message.reply_to_message, f"{message.from_user.first_name}: \n {echo}")
-    else:
-        bot.send_message(message.chat.id, f"{message.from_user.first_name}: \n {echo}")
-    bot.delete_message(message.chat.id, message.message_id)
-
 
 @bot.message_handler(func=lambda m: m.text == "قوانین")
 def show_group_rules(message):
@@ -687,15 +675,22 @@ def handle_messages(message:types.Message):
             banned_words = {line.strip() for line in f}
 
         for word in text.split(" "):
+            word = word.strip("‌")
+            word = word.replace("‌", "")
             if word in banned_words:
                 swears.append(word)
 
     if not len(swears) == 0:
+
+        for swear in swears:
+            pattern = re.compile(re.escape(swear), re.IGNORECASE)
+            text = pattern.sub(r"\*" * len(swear), text)
+
         bot.delete_message(chat_id, message.message_id)
         markup = types.InlineKeyboardMarkup()
         check_button = types.InlineKeyboardButton("نمایش کلمه", callback_data=f"swear:{repr(swears)}")
         markup.add(check_button)
-        bot.send_message(chat_id, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم", parse_mode="Markdown", reply_markup=markup)
+        bot.send_message(chat_id, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم \n\n متن سانسور شده :\n >> {text}", parse_mode="Markdown", reply_markup=markup)
 
     if text.startswith("db:"):
         bot.reply_to(message, "گوه نخور بابا این گوزا به تو نیومده")
@@ -944,6 +939,18 @@ def handle_messages(message:types.Message):
         admins = bot.get_chat_administrators(chat_id)
         mentions = [f"[{a.user.first_name}](tg://user?id={a.user.id})" for a in admins]
         bot.send_message(chat_id, " ".join(mentions), parse_mode="Markdown")
+
+@bot.message_handler(func=lambda m: m.text.startswith("اکو "))
+def echo_word(message:types.Message):
+    toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
+    if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
+        return
+    echo = message.text[len("اکو"):].strip()
+    if message.reply_to_message:
+        bot.reply_to(message.reply_to_message, f"{message.from_user.first_name}: \n {echo}")
+    else:
+        bot.send_message(message.chat.id, f"{message.from_user.first_name}: \n {echo}")
+    bot.delete_message(message.chat.id, message.message_id)
 
 
 # ---------------- RUN ----------------
