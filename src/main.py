@@ -427,6 +427,28 @@ def active_swear_strict(message:types.Message):
     else:
         set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
         bot.reply_to(message, "قفل غیرفعال شد")
+
+
+@bot.message_handler(func=lambda m: m.text.startswith("دستورات عمومی"))
+def public_commands(message:types.Message):
+    if not is_admin(message.chat.id, message.from_user.id):
+        bot.reply_to(message, "توکی باشی که اینارو برا من تنظیم کنی")
+        return
+    toggle = message.text.replace("دستورات عمومی", "").strip()
+    if toggle == "روشن":
+        if get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1) == 1:
+            bot.reply_to(message, "همینطوریشم روشنه ستونم")
+            return
+        else:
+            set_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
+            bot.reply_to(message, "دستورات عمومی روشن شد")
+    elif toggle == "خاموش":
+        if get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1) == 0:
+            bot.reply_to(message, "همینطوریشم خاموشه ستونم")
+            return
+        else:
+            set_group_setting(message.chat.id, "PUBLIC_COMMANDS", 0)
+            bot.reply_to(message, "دستورات عمومی خاموش شد")
                 
 
 @bot.message_handler(func=lambda m: m.text == "درخواست برای ورود")
@@ -447,6 +469,9 @@ def toggle_request(message:types.Message):
 
 @bot.message_handler(func=lambda m: m.text == "لینک")
 def create_invite_link(message):
+    toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
+    if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
+        return
     lnk = bot.create_chat_invite_link(
         chat_id=message.chat.id,
         name=f"Link by {message.from_user.first_name}",
@@ -460,6 +485,9 @@ def create_invite_link(message):
 
 @bot.message_handler(func=lambda m: m.text == "فیلترها")
 def all_filters(message:types.Message):
+    toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
+    if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
+        return
     filters = get_tags(message.chat.id)
     string = "تمامی فیلترها :\n"
     for filter, response in filters.items():
@@ -468,6 +496,9 @@ def all_filters(message:types.Message):
 
 @bot.message_handler(func=lambda m: m.text.startswith("اکو "))
 def echo_word(message:types.Message):
+    toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
+    if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
+        return
     echo = message.text[len("اکو"):].strip()
     if message.reply_to_message:
         bot.reply_to(message.reply_to_message, echo)
@@ -646,6 +677,10 @@ def handle_messages(message:types.Message):
     text = (message.text or "")
     file = open(SWEARS_PATH, "r")
     swears = []
+
+    toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
+    if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
+        return
 
     for word in text.split(" "):
         if word in file.read():
