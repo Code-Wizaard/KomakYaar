@@ -556,7 +556,8 @@ def callback_handler(call):
                     "- `آن‌بن` : آزاد کردن کاربر از بن\n"
                     "- `سیک مخفی/بن+` : کاربر بدون سر و صدا بن میشه و پیام هم پاک میشه\n"
                     "- `اخطار` : کاربر اخطار داده میشه، میتونید با دستور `سقف اخطار` تعداد اخطارو تغییر بدید که پیش فرض روی ۳ هست و در صورت رسیدن به این تعداد کاربر از گروه کیک میشه\n"
-                    "- `حذف اخطارها`: حذف تمامی اخطارهای کاربر و تنظیم اون روی صفر"
+                    "- `حذف اخطارها`: حذف تمامی اخطارهای کاربر و تنظیم اون روی صفر\n"
+                    "- `گزارش` : ریپلای روی پیام کاربر برای گزارش دادن به ادمین‌ها\n"
                 ),
                 "help_tags": (
                     "🏷️ فیلترها و پاسخ خودکار:\n"
@@ -738,11 +739,14 @@ def handle_messages(message:types.Message):
             target = bot.get_chat(target_id)
             markup = types.InlineKeyboardMarkup()
             check_button = types.InlineKeyboardButton("بررسی شد", callback_data=f"check:{id}")
+            message_btn = types.InlineKeyboardButton("رفتن به پیام", url=f"https://t.me/c/{str(chat_id)[4:]}/{message.reply_to_message.message_id}")
+            
             markup.add(check_button)
+            markup.add(message_btn)
             for admin in admins:
                 if not admin.user.is_bot and admin.user.id != bot.get_me().id:
                     try:
-                        bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر {user_id} در گروه با ایدی {chat_id}\n فرد گزارش شده : {target.first_name}\n متن پیام ارسالی : {message.reply_to_message.text}", reply_markup=markup)
+                        bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر [{message.from_user.first_name}](tg://user?id={user_id}) در گروه با ایدی {chat_id}\n فرد گزارش شده : [{target.first_name}](tg://user?id={target_id})\n متن پیام ارسالی :\n > {message.reply_to_message.text}", reply_markup=markup)
                     except:
                         pass
 
