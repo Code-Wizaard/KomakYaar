@@ -409,7 +409,7 @@ def active_swear_strict(message:types.Message):
     if not is_admin(message.chat.id, message.from_user.id):
         bot.reply_to(message, ":\\ گمشو از جلو چشام دور شو")
         return
-    if int(get_group_setting(message.chat.id, "SWEAR_LOCK", -1)) in [-1, 1]:
+    if int(get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) in [-1, 1]:
         set_group_setting(message.chat.id, "SWEAR_LOCK", 1)
         bot.reply_to(message, "همینطوریشم فعال هست ستونم")
     else:
@@ -421,7 +421,7 @@ def active_swear_strict(message:types.Message):
     if not is_admin(message.chat.id, message.from_user.id):
         bot.reply_to(message, ":\\ گمشو از جلو چشام دور شو")
         return
-    if int(get_group_setting(message.chat.id, "SWEAR_LOCK", -1)) in [-1, 0]:
+    if int(get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) in [-1, 0]:
         set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
         bot.reply_to(message, "همینطوریشم غیرفعال هست ستونم")
     else:
@@ -682,10 +682,14 @@ def handle_messages(message:types.Message):
     if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
         return
 
-    for word in text.split(" "):
-        if word in file.read():
-            if int(get_group_setting(chat_id, "SWEAR_LOCK", -1)) == 1:
+    if int(get_group_setting(chat_id, "SWEAR_LOCK", 0)) == 1:
+        with open(SWEARS_PATH) as f:
+            banned_words = {line.strip() for line in f}
+
+        for word in text.split(" "):
+            if word in banned_words:
                 swears.append(word)
+
     if not len(swears) == 0:
         bot.delete_message(chat_id, message.message_id)
         markup = types.InlineKeyboardMarkup()
