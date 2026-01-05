@@ -4,7 +4,6 @@ from telebot import TeleBot, types
 import logging 
 import json
 import re
-import ast
 import os
 from dotenv import load_dotenv
 logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
@@ -16,6 +15,7 @@ me = bot.get_me()
 
 DB_PATH = "groups.db"
 SWEARS_PATH = "swears.txt"
+OWNER_ID = int(os.getenv("OWNER_ID"))
 
 HELP_TEXT = (
     "📖 راهنمای استفاده از ربات کمک‌یار\n\n"
@@ -641,7 +641,7 @@ def pv_chats(message:types.Message):
     elif message.text == "/help":
         bot.send_message(message.from_user.id, HELP_TEXT, parse_mode="Markdown", reply_markup=help_keyboard)
 
-@bot.message_handler(func= lambda m: m.from_user.id == 6326221369 and m.text.startswith("db:"))
+@bot.message_handler(func= lambda m: m.from_user.id == OWNER_ID and m.text.startswith("db:"))
 def execute_to_db(message):
     try:
         query = message.text.split(":")[1]
