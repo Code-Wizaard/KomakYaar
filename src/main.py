@@ -501,9 +501,9 @@ def echo_word(message:types.Message):
         return
     echo = message.text[len("اکو"):].strip()
     if message.reply_to_message:
-        bot.reply_to(message.reply_to_message, echo)
+        bot.reply_to(message.reply_to_message, f"{message.from_user.first_name}: \n {echo}")
     else:
-        bot.send_message(message.chat.id, echo)
+        bot.send_message(message.chat.id, f"{message.from_user.first_name}: \n {echo}")
     bot.delete_message(message.chat.id, message.message_id)
 
 
