@@ -495,6 +495,19 @@ def all_filters(message:types.Message):
     bot.reply_to(message, string)
 
 
+@bot.message_handler(func=lambda m: m.text.startswith("اکو "))
+def echo_word(message:types.Message):
+    toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
+    if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
+        return
+    echo = message.text[len("اکو"):].strip()
+    if message.reply_to_message:
+        bot.reply_to(message.reply_to_message, f"{message.from_user.first_name}: \n {echo}")
+    else:
+        bot.send_message(message.chat.id, f"{message.from_user.first_name}: \n {echo}")
+    bot.delete_message(message.chat.id, message.message_id)
+
+
 @bot.message_handler(func=lambda m: m.text == "قوانین")
 def show_group_rules(message):
     bot.reply_to(message, f"قوانین گروه :\n {get_group_rules(message.chat.id)}")
@@ -939,18 +952,6 @@ def handle_messages(message:types.Message):
         admins = bot.get_chat_administrators(chat_id)
         mentions = [f"[{a.user.first_name}](tg://user?id={a.user.id})" for a in admins]
         bot.send_message(chat_id, " ".join(mentions), parse_mode="Markdown")
-
-@bot.message_handler(func=lambda m: m.text.startswith("اکو "))
-def echo_word(message:types.Message):
-    toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
-    if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
-        return
-    echo = message.text[len("اکو"):].strip()
-    if message.reply_to_message:
-        bot.reply_to(message.reply_to_message, f"{message.from_user.first_name}: \n {echo}")
-    else:
-        bot.send_message(message.chat.id, f"{message.from_user.first_name}: \n {echo}")
-    bot.delete_message(message.chat.id, message.message_id)
 
 
 # ---------------- RUN ----------------
