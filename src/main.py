@@ -13,8 +13,8 @@ API_TOKEN = os.getenv("TOKEN")
 bot = TeleBot(API_TOKEN)
 me = bot.get_me()
 
-DB_PATH = "groups.db"
-SWEARS_PATH = "swears.txt"
+DB_PATH = os.getenv("DB_PATH", "groups.db")
+SWEARS_PATH = os.getenv("SWEARS_PATH", "swears.txt")
 OWNER_ID = int(os.getenv("OWNER_ID"))
 
 HELP_TEXT = (
