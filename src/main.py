@@ -798,7 +798,7 @@ def handle_update_command(message):
     lines = text.splitlines()
 
     first_line = lines[0].strip()
-    version_match = re.search(r'/update\s+([vV]?\d+\.\d+)', first_line, re.IGNORECASE)
+    version_match = re.search(r'/update\s+[vV]?(\d+\.\d+(\.\d+)?)', first_line, re.IGNORECASE)
     
     if not version_match:
         bot.reply_to(message, 
