@@ -408,6 +408,27 @@ def get_botBlocks(group_id):
     con.close()
     return [row[0] for row in rows]
 
+def update_message(updates:list, version:str):
+    message = f"*نسخه جدید ربات کمک‌یار (***{version}***) منتشر شد!*\n\n"
+    for update in updates:
+        message += f"• {update}\n"
+    con = db()
+    cur = con.cursor()
+    cur.execute("SELECT group_id FROM groups WHERE active=1")
+    rows = cur.fetchall()
+    con.close()
+    success = 0
+    err = 0
+    for row in rows:
+        try:
+            bot.send_message(row[0], message, parse_mode="Markdown")
+            success += 1
+        except:
+            err += 1
+            continue
+    return success, err
+    
+
 # ---------------- HANDLERS ----------------
 @bot.message_handler(func=lambda m: m.text == "فعال شو")
 def cmd_startgroup(message):
@@ -766,6 +787,57 @@ def execute_to_db(message):
         bot.reply_to(message, f"ریدی ارور گرفتم \n {e}")
     finally:
         con.close()
+
+@bot.message_handler(commands=['update'])
+def handle_update_command(message):
+    if message.from_user.id != OWNER_ID:
+        bot.reply_to(message, "فقط ادمین می‌تونه آپدیت پخش کنه!")
+        return
+
+    text = message.text.strip()
+    lines = text.splitlines()
+
+    first_line = lines[0].strip()
+    version_match = re.search(r'/update\s+([vV]?\d+\.\d+)', first_line, re.IGNORECASE)
+    
+    if not version_match:
+        bot.reply_to(message, 
+            "❌ فرمت اشتباه!\n\n"
+            "مثال صحیح:\n"
+            "/update 1.3\n"
+            "• اضافه شدن قابلیت جدید\n"
+            "• رفع باگ لاگین\n"
+            "• بهبود سرعت")
+        return
+
+    version = version_match.group(1).lstrip('vV')
+    
+    updates = []
+    for line in lines[1:]:
+        stripped = line.strip()
+        if stripped and not stripped.startswith('/'):  
+            if not stripped.startswith('•'):
+                stripped = '• ' + stripped
+            updates.append(stripped)
+
+    if not updates:
+        bot.reply_to(message, "❌ هیچ آپدیتی نوشته نشده!")
+        return
+
+
+    preview = f"*نسخه جدید ربات کمک‌یار (***{version}***) منتشر شد!*\n\n"
+    for upd in updates:
+        preview += f"{upd}\n"
+
+    bot.reply_to(message, f"در حال پخش آپدیت به همه گروه‌ها...\n\nپیش‌نمایش:\n{preview}", parse_mode="Markdown")
+
+    try:
+        success, err = update_message(updates, version)
+        bot.reply_to(message, f"✅ پخش آپدیت تموم شد!\n\n"
+                              f"ارسال موفق: {success} گروه\n"
+                              f"خطا: {err} گروه")
+    except Exception as e:
+        bot.reply_to(message, f"خطا در پخش آپدیت: {e}")    
 
 @bot.message_handler(func=lambda m: True)
 def handle_messages(message:types.Message):
