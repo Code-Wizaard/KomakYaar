@@ -1027,5 +1027,4 @@ def handle_messages(message:types.Message):
 
 # ---------------- RUN ----------------
 print(f"{me.username} Group Helper running...")
-bot.polling(none_stop=True, skip_pending=True)
-
+bot.polling(non_stop=True, skip_pending=True)
