@@ -1,7 +1,7 @@
 import sqlite3
 import time
 from telebot import TeleBot, types
-import logging 
+import logging
 import json
 import re
 import os
@@ -332,7 +332,7 @@ def get_user_warnings(group_id, user_id):
     cur.execute("SELECT warnings FROM warnings WHERE group_id=? AND user_id=?", (group_id, user_id))
     row = cur.fetchone()
     return row[0] if row else 3
-    
+
 
 def warn_user(group_id, user_id):
     con = db()
@@ -449,7 +449,7 @@ def public_commands(message:types.Message):
         else:
             set_group_setting(message.chat.id, "PUBLIC_COMMANDS", 0)
             bot.reply_to(message, "دستورات عمومی خاموش شد")
-                
+
 
 @bot.message_handler(func=lambda m: m.text == "درخواست برای ورود")
 def toggle_request(message:types.Message):
@@ -518,14 +518,14 @@ def show_group_rules(message):
 def greet(message):
     if not is_group_active(message.chat.id):
         return
-    
+
     if message.new_chat_members[0].id == me.id:
         bot.send_message(message.chat.id, """سلام رفقا
         من کمک‌یـــارم، یه دستیار مدیریت گروه و یه رفیق باحال برای شما
         از طریق من میتونین به راحتی کاربرا، مدیرا، محتوا و... گروهتون رو مدیریت کنید
         فقط کافیه برای شروع یه ادمین بگه `فعال شو` تا کارمونو شروع کنیم
         برای دیدن طرز کار با من کلمه ی `راهنما` رو ارسال کنید
-                         
+
         همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
         لینک پروژه :
         https://github.com/Code-Wizaard/KomakYaar
@@ -633,7 +633,7 @@ def pv_chats(message:types.Message):
             message.chat.id,
             """سلام 👋
 
-    به **ربات کمک‌یار** خوش اومدی 🤖  
+    به **ربات کمک‌یار** خوش اومدی 🤖
     این ربات بهت کمک می‌کنه گروهت رو راحت‌تر مدیریت کنی.
 
     📌 کاری که لازمه بکنی:
@@ -642,7 +642,7 @@ def pv_chats(message:types.Message):
     3. از این به بعد ربات همه چیز رو هندل می‌کنه.
 
     ❓ برای دیدن همه دستورات، کافیه `/help` رو بزنی.
-    
+
     همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
     لینک پروژه :
     https://github.com/Code-Wizaard/KomakYaar
@@ -699,6 +699,8 @@ def handle_messages(message:types.Message):
             pattern = re.compile(re.escape(swear), re.IGNORECASE)
             text = pattern.sub(r"\*" * len(swear), text)
 
+        if is_admin(chat_id, message.from_user.id):
+            return
         bot.delete_message(chat_id, message.message_id)
         markup = types.InlineKeyboardMarkup()
         check_button = types.InlineKeyboardButton("نمایش کلمه", callback_data=f"swear:{repr(swears)}")
@@ -726,7 +728,7 @@ def handle_messages(message:types.Message):
         words.remove("اخطار")
         set_warn_maximum(chat_id, words[0])
         bot.reply_to(message, "سقف اخطارها با موفقیت تنظیم شد")
-    
+
     if text.startswith("حذف فیلتر") and is_admin(chat_id, user_id):
         # اگر ریپلای شده روی پیام کلیدواژه
         if message.reply_to_message:
@@ -734,7 +736,7 @@ def handle_messages(message:types.Message):
         else:
             # جدا کردن کلیدواژه از متن: حذف فیلتر <کلیدواژه>
             keyword = text[len("حذف فیلتر"):].strip()
-                
+
         if keyword:
             del_tag(chat_id, keyword)
             bot.reply_to(message, f"❌ فیلتر '{keyword}' حذف شد")
@@ -772,14 +774,14 @@ def handle_messages(message:types.Message):
                 bot.reply_to(message, f"✅ فیلتر اضافه شد!\nکلیدواژه: {keyword}\nپاسخ: {response}")
             else:
                 bot.reply_to(message, "⚠️ فرمت درست: ریپلای روی پیام و نوشتن: فیلتر پاسخ")
-            return        
+            return
 
         if text == "حذف":
             bot.delete_message(chat_id, message.reply_to_message.message_id)
             msg = bot.reply_to(message, "پیام پاک شد 🗑️")
             time.sleep(4)
             bot.delete_message(msg.chat.id, msg.message_id)
-    
+
         if text == "گزارش":
             admins = bot.get_chat_administrators(chat_id)
             msg = bot.reply_to(message, "گزارش با موفقیت ثبت و به ادمین ها اطلاع رسانی شد، به زودی گزارش بررسی میشود")
@@ -788,7 +790,7 @@ def handle_messages(message:types.Message):
             markup = types.InlineKeyboardMarkup()
             check_button = types.InlineKeyboardButton("بررسی شد", callback_data=f"check:{id}")
             message_btn = types.InlineKeyboardButton("رفتن به پیام", url=f"https://t.me/c/{str(chat_id)[4:]}/{message.reply_to_message.message_id}")
-            
+
             markup.add(check_button)
             markup.add(message_btn)
             for admin in admins:
@@ -806,7 +808,7 @@ def handle_messages(message:types.Message):
         if text == "لقب":
             alias = get_alias(chat_id, target_id).strip()
             bot.reply_to(message, f"لقب ثبت شده برای این کاربر :\n {alias}")
-        
+
         if text == "تنظیم خوشامد" and is_admin(chat_id, user_id):
             set_group_welcome(chat_id, message.reply_to_message.text)
             bot.reply_to(message, "متن خوشامد گویی ربات با موفقیت تنظیم شد")
@@ -814,7 +816,7 @@ def handle_messages(message:types.Message):
         if text == "تنظیم قوانین" and is_admin(chat_id, user_id):
             set_group_rules(chat_id, message.reply_to_message.text)
             bot.reply_to(message, "قوانین گروه با موفقیت تنظیم شد")
-    
+
         if text == "اطلاعات":
             try:
                 # گرفتن اطلاعات پایه کاربر
@@ -906,7 +908,7 @@ def handle_messages(message:types.Message):
             remove_all_warns(chat_id, target_id)
             bot.reply_to(message, "شتر دیدی ندیدی! ✅")
 
-            
+
 
         # KICK
         elif (text == "ریم" or text == "کیک" or text == "سیک") and is_admin(chat_id, user_id):
@@ -947,7 +949,7 @@ def handle_messages(message:types.Message):
             remove_punishment(chat_id, target_id, "mute")
             bot.reply_to(message, "✅ کاربر آن‌میوت شد!")
 
-    
+
     if text == "@admins":
         admins = bot.get_chat_administrators(chat_id)
         mentions = [f"[{a.user.first_name}](tg://user?id={a.user.id})" for a in admins]
