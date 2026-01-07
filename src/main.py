@@ -100,6 +100,13 @@ def init_db():
     )
     """)
     cur.execute("""
+    CREATE TABLE IF NOT EXISTS ASLs (
+        group_id INTEGER,
+        user_id INTEGER,
+        asl TEXT
+    )
+    """)
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS warnings (
         group_id INTEGER,
         user_id INTEGER,
@@ -247,6 +254,27 @@ def get_alias(group, user):
         return rows[0]
     else:
         return "هیچ لقبی برای این کاربر در این گروه ثبت نشده :("
+    
+def set_asl(group_id, user_id, asl):
+    con = db()
+    cur = con.cursor()
+    asl = get_asl(group_id, user_id)
+    if asl == "هیچ اصلی برای این کاربر در این گروه ثبت نشده :(":
+        cur.execute("INSERT INTO ASLs (group_id, user_id, asl) VALUES (?, ?, ?)", (group_id, user_id, asl))
+    else:
+        cur.execute("UPDATE ASLs SET asl=? WHERE group_id=? AND user_id=?", (asl, group_id, user_id))
+    con.commit()
+    con.close()
+
+def get_asl(group_id, user_id):
+    con = db()
+    cur = con.cursor()
+    cur.execute("SELECT asl FROM ASLs WHERE group_id=? AND user_id=?", (group_id, user_id))
+    rows = cur.fetchone()
+    if rows:
+        return rows[0]
+    else:
+        return "هیچ اصلی برای این کاربر در این گروه ثبت نشده :("
 
 def is_admin(group_id, user_id):
     try:
@@ -877,6 +905,15 @@ def handle_messages(message:types.Message):
         if text == "لقب":
             alias = get_alias(chat_id, target_id).strip()
             bot.reply_to(message, f"لقب ثبت شده برای این کاربر :\n {alias}")
+
+        if text.startswith("ثبت اصل") and (is_admin(chat_id, user_id) or target_id == user_id):
+            asl = text[len("ثبت اصل"):].strip()
+            set_asl(chat_id, target_id, asl)
+            bot.reply_to(message, f"اصل {asl} با موفقیت برای این کاربر ثبت شد")
+
+        if text == "اصل":
+            asl = get_asl(chat_id, target_id).strip()
+            bot.reply_to(message, f"اصل ثبت شده برای این کاربر :\n {asl}")
 
         if text == "تنظیم خوشامد" and is_admin(chat_id, user_id):
             set_group_welcome(chat_id, message.reply_to_message.text)
