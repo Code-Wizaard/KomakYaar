@@ -411,7 +411,7 @@ def get_botBlocks(group_id):
 def update_message(updates:list, version:str):
     message = f"*نسخه جدید ربات کمک‌یار (***{version}***) منتشر شد!*\n\n"
     for update in updates:
-        message += f"• {update}\n"
+        message += f"{update}\n"
     con = db()
     cur = con.cursor()
     cur.execute("SELECT group_id FROM groups WHERE active=1")
@@ -743,50 +743,6 @@ def callback_handler(call):
     except Exception as e:
         print(f"Callback error: {e}")
 
-@bot.message_handler(func=lambda m: m.chat.type == "private")
-def pv_chats(message:types.Message):
-    if message.text == "/start":
-        bot.send_message(
-            message.chat.id,
-            """سلام 👋
-
-    به **ربات کمک‌یار** خوش اومدی 🤖
-    این ربات بهت کمک می‌کنه گروهت رو راحت‌تر مدیریت کنی.
-
-    📌 کاری که لازمه بکنی:
-    1. ربات رو به گروه اضافه کن.
-    2. دستور `فعال شو` رو بزن.
-    3. از این به بعد ربات همه چیز رو هندل می‌کنه.
-
-    ❓ برای دیدن همه دستورات، کافیه `/help` رو بزنی.
-
-    همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
-    لینک پروژه :
-    https://github.com/Code-Wizaard/KomakYaar
-    """,
-            parse_mode="Markdown",
-            disable_web_page_preview=True,
-            reply_markup=start_keyboard
-    )
-    elif message.text == "/help":
-        bot.send_message(message.from_user.id, HELP_TEXT, parse_mode="Markdown", reply_markup=help_keyboard)
-
-@bot.message_handler(func= lambda m: m.from_user.id == OWNER_ID and m.text.startswith("db:"))
-def execute_to_db(message):
-    try:
-        query = message.text.split(":")[1]
-        con = db()
-        cur = con.cursor()
-        cur.execute(query)
-        rows = cur.fetchall()
-        if rows:
-            bot.reply_to(message, f"Hello Master, These are the responses : \n {json.dumps(rows, ensure_ascii=False)}")
-        else:
-            con.commit()
-    except Exception as e:
-        bot.reply_to(message, f"ریدی ارور گرفتم \n {e}")
-    finally:
-        con.close()
 
 @bot.message_handler(commands=['update'])
 def handle_update_command(message):
@@ -848,6 +804,53 @@ def handle_update_command(message):
                      f"خطا یا بلاک شده: {err} گروه")
     except Exception as e:
         bot.reply_to(message, f"❌ خطا در پخش آپدیت: {str(e)}")
+
+@bot.message_handler(func=lambda m: m.chat.type == "private")
+def pv_chats(message:types.Message):
+    if message.text == "/start":
+        bot.send_message(
+            message.chat.id,
+            """سلام 👋
+
+    به **ربات کمک‌یار** خوش اومدی 🤖
+    این ربات بهت کمک می‌کنه گروهت رو راحت‌تر مدیریت کنی.
+
+    📌 کاری که لازمه بکنی:
+    1. ربات رو به گروه اضافه کن.
+    2. دستور `فعال شو` رو بزن.
+    3. از این به بعد ربات همه چیز رو هندل می‌کنه.
+
+    ❓ برای دیدن همه دستورات، کافیه `/help` رو بزنی.
+
+    همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
+    لینک پروژه :
+    https://github.com/Code-Wizaard/KomakYaar
+    """,
+            parse_mode="Markdown",
+            disable_web_page_preview=True,
+            reply_markup=start_keyboard
+    )
+    elif message.text == "/help":
+        bot.send_message(message.from_user.id, HELP_TEXT, parse_mode="Markdown", reply_markup=help_keyboard)
+
+@bot.message_handler(func= lambda m: m.from_user.id == OWNER_ID and m.text.startswith("db:"))
+def execute_to_db(message):
+    try:
+        query = message.text.split(":")[1]
+        con = db()
+        cur = con.cursor()
+        cur.execute(query)
+        rows = cur.fetchall()
+        if rows:
+            bot.reply_to(message, f"Hello Master, These are the responses : \n {json.dumps(rows, ensure_ascii=False)}")
+        else:
+            con.commit()
+    except Exception as e:
+        bot.reply_to(message, f"ریدی ارور گرفتم \n {e}")
+    finally:
+        con.close()
+
+
 
 @bot.message_handler(func=lambda m: True)
 def handle_messages(message:types.Message):
