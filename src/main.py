@@ -483,7 +483,7 @@ def block_bot_handler(message:types.Message):
     if not is_admin(message.chat.id, message.from_user.id):
         bot.reply_to(message, "کصخلییییییییییی؟")
         return
-    bot_username = message.text.replace("بلاک بات ", "").strip()
+    bot_username = message.text.replace("بلاک بات ", "").strip().replace("@", "")
     block_bot(message.chat.id, bot_username)
     bot.reply_to(message, f"بات {bot_username} بلاک شد")
 
@@ -492,9 +492,23 @@ def unblock_bot_handler(message:types.Message):
     if not is_admin(message.chat.id, message.from_user.id):
         bot.reply_to(message, "اره حاجی راستی بهت گفتم کسایی که ادمین نیستن کیر منم نیستن؟")
         return
-    bot_username = message.text.replace("آن‌بلاک بات ", "").strip()
+    bot_username = message.text.replace("آن‌بلاک بات ", "").strip().replace("@", "")
     unblock_bot(message.chat.id, bot_username)
     bot.reply_to(message, f"بات {bot_username} آن‌بلاک شد")
+
+@bot.message_handler(func=lambda m: m.text == "بات های بلاک شده")
+def blocked_bots(message: types.Message):
+    if not is_admin(message.chat.id, message.from_user.id):
+        bot.reply_to(message, "خفه شو بابا")
+        return
+    blocked_bots = get_botBlocks(message.chat.id)
+    if not blocked_bots:
+        bot.reply_to(message, "هیچ باتی بلاک نشده")
+        return
+    string = "بات های بلاک شده :\n"
+    for bot_username in blocked_bots:
+        string += f" - @{bot_username}\n"
+    bot.reply_to(message, string)
 
 @bot.message_handler(func=lambda m: m.text == "درخواست برای ورود")
 def toggle_request(message:types.Message):
