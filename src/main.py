@@ -106,6 +106,12 @@ def init_db():
         warnings INTEGER
     )
     """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS botBlocks (
+            group_id INTEGER,
+            bot_username TEXT
+        )
+    """)
 
 
     con.commit()
@@ -352,6 +358,28 @@ def remove_all_warns(group_id, user_id):
     con.commit()
     con.close()
 
+def block_bot(group_id, bot_username):
+    con = db()
+    cur = con.cursor()
+    cur.execute("INSERT INTO botBlocks (group_id, bot_username) VALUES (?, ?)", (group_id, bot_username))
+    con.commit()
+    con.close()
+
+def unblock_bot(group_id, bot_username):
+    con = db()
+    cur = con.cursor()
+    cur.execute("DELETE FROM botBlocks WHERE group_id=? AND bot_username=?", (group_id, bot_username))
+    con.commit()
+    con.close()
+
+def get_botBlocks(group_id):
+    con = db()
+    cur = con.cursor()
+    cur.execute("SELECT bot_username FROM botBlocks WHERE group_id=?", (group_id,))
+    rows = cur.fetchall()
+    con.close()
+    return [row[0] for row in rows]
+
 # ---------------- HANDLERS ----------------
 @bot.message_handler(func=lambda m: m.text == "فعال شو")
 def cmd_startgroup(message):
@@ -450,6 +478,23 @@ def public_commands(message:types.Message):
             set_group_setting(message.chat.id, "PUBLIC_COMMANDS", 0)
             bot.reply_to(message, "دستورات عمومی خاموش شد")
 
+@bot.message_handler(func=lambda m: m.text.startswith("بلاک بات "))
+def block_bot_handler(message:types.Message):
+    if not is_admin(message.chat.id, message.from_user.id):
+        bot.reply_to(message, "کصخلییییییییییی؟")
+        return
+    bot_username = message.text.replace("بلاک بات ", "").strip()
+    block_bot(message.chat.id, bot_username)
+    bot.reply_to(message, f"بات {bot_username} بلاک شد")
+
+@bot.message_handler(func=lambda m: m.text.startswith("آن‌بلاک بات "))
+def unblock_bot_handler(message:types.Message):
+    if not is_admin(message.chat.id, message.from_user.id):
+        bot.reply_to(message, "اره حاجی راستی بهت گفتم کسایی که ادمین نیستن کیر منم نیستن؟")
+        return
+    bot_username = message.text.replace("آن‌بلاک بات ", "").strip()
+    unblock_bot(message.chat.id, bot_username)
+    bot.reply_to(message, f"بات {bot_username} آن‌بلاک شد")
 
 @bot.message_handler(func=lambda m: m.text == "درخواست برای ورود")
 def toggle_request(message:types.Message):
@@ -678,6 +723,13 @@ def handle_messages(message:types.Message):
     text = (message.text or "")
     file = open(SWEARS_PATH, "r")
     swears = []
+
+    if message.via_bot:
+        bot_username = message.via_bot.username
+        blocked_bots = get_botBlocks(message.chat.id)
+        if bot_username in blocked_bots:
+            bot.delete_message(message.chat.id, message.message_id)
+            return
 
     toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
     if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
