@@ -850,6 +850,19 @@ def execute_to_db(message):
     finally:
         con.close()
 
+@bot.message_handler(func= lambda m: m.from_user.id == OWNER_ID and m.text == ";id;")
+def id_informations_owner(message: types.Message):
+    if message.reply_to_message:
+        bot.reply_to(message, f"اطلاعات فرد مشخص شده : \n"
+        f"آیدی فرد : {message.reply_to_message.from_user.id}\n"
+        f"آیدی پیام : {message.reply_to_message.id}\n")
+    else:
+        bot.reply_to(message, f"آیدی گروه : {message.chat.id}\n")
+
+@bot.message_handler(func= lambda m: m.from_user.id == OWNER_ID and m.text.startswith("(tag): "))
+def make_id_into_tag(message: types.Message):
+    user_id = message.text.replace("(tag): ", "").strip()
+    bot.reply_to(message, f"[HereYouGo](tg://user?id={user_id})", parse_mode="Markdown")
 
 
 @bot.message_handler(func=lambda m: True)
