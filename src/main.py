@@ -119,6 +119,12 @@ def init_db():
             bot_username TEXT
         )
     """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS blocked_words (
+            group_id INTEGER,
+            word TEXT
+        )
+    """)
 
 
     con.commit()
@@ -404,6 +410,28 @@ def get_botBlocks(group_id):
     con = db()
     cur = con.cursor()
     cur.execute("SELECT bot_username FROM botBlocks WHERE group_id=?", (group_id,))
+    rows = cur.fetchall()
+    con.close()
+    return [row[0] for row in rows]
+
+def block_word(group_id, word):
+    con = db()
+    cur = con.cursor()
+    cur.execute("INSERT INTO blocked_words (group_id, word) VALUES (?, ?)", (group_id, word))
+    con.commit()
+    con.close()
+
+def unblock_word(group_id, word):
+    con = db()
+    cur = con.cursor()
+    cur.execute("DELETE FROM blocked_words WHERE group_id=? AND word=?", (group_id, word))
+    con.commit()
+    con.close()
+
+def blocked_words(group_id):
+    con = db()
+    cur = con.cursor()
+    cur.execute("SELECT word FROM blocked_words WHERE group_id=?", (group_id))
     rows = cur.fetchall()
     con.close()
     return [row[0] for row in rows]
@@ -883,6 +911,12 @@ def handle_messages(message:types.Message):
     toggle = get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
     if not is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
         return
+
+    for word in text.split(" "):
+        word = word.strip("‌")
+        blocked_word = blocked_words(chat_id)
+        if word in blocked_word:
+            swears.append(word)
 
     if int(get_group_setting(chat_id, "SWEAR_LOCK", 0)) == 1:
         with open(SWEARS_PATH) as f:
