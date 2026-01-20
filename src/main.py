@@ -26,7 +26,7 @@ start_keyboard.add(
 
 class KomakYaar():
     def __init__(self):
-        db = DataBase()
+        self.db = DataBase()
         self.setup_events()
     
     def setup_events(self):
@@ -104,6 +104,9 @@ class KomakYaar():
             else:
                 self.db.set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
                 bot.reply_to(message, "قفل غیرفعال شد")
+
+
+        
 
 
         @bot.message_handler(func=lambda m: m.text.startswith("دستورات عمومی"))
