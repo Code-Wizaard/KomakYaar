@@ -106,7 +106,27 @@ class KomakYaar():
                 bot.reply_to(message, "قفل غیرفعال شد")
 
 
-        
+        @bot.message_handler(func=lambda m: m.text == "قفل لینک")
+        def link_blocker(message: types.Message):
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "نذار دولمو به کصت لینک کنم")
+                return
+            if int(self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1:
+                bot.reply_to(message, "خیالت راحت باشه نمیگفتی هم لینکارو پاک میکردم")
+            else:
+                self.db.set_group_setting(message.chat.id, "LINK_LOCK", 1)
+                bot.reply_to(message, "ردیفه ستون اوکیش کردم")
+
+        @bot.message_handler(func= lambda m: m.text == "بازکردن لینک")
+        def link_unblocking(message: types.Message):
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "خیلی دوست داری بازت کنم نه؟")
+                return
+            if int(self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 0:
+                bot.reply_to(message, "باع، قفل که قبلشم باز بود")
+            else:
+                self.db.set_group_setting(message.chat.id, "LINK_LOCK", 0)
+                bot.reply_to(message, "انقدر لینکو باز کردم تا جر خورد (اوکی)")
 
 
         @bot.message_handler(func=lambda m: m.text.startswith("دستورات عمومی"))
@@ -475,6 +495,11 @@ class KomakYaar():
                 blocked_bots = self.db.get_botBlocks(message.chat.id)
                 if bot_username in blocked_bots:
                     bot.delete_message(message.chat.id, message.message_id)
+                    return
+                
+            if self.db.get_group_setting(chat_id, "LINK_LOCK", 0):
+                if re.search(r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", text):
+                    bot.delete_message(chat_id, message.message_id)
                     return
 
             toggle = self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)

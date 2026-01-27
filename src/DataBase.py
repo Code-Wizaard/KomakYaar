@@ -231,8 +231,8 @@ class DataBase():
     def set_asl(self, group_id, user_id, asl):
         with self._db() as con:
             cur = con.cursor()
-            asl = self.get_asl(group_id, user_id)
-            if asl == "هیچ اصلی برای این کاربر در این گروه ثبت نشده :(":
+            curr_asl = self.get_asl(group_id, user_id)
+            if curr_asl == "هیچ اصلی برای این کاربر در این گروه ثبت نشده :(":
                 cur.execute("INSERT INTO ASLs (group_id, user_id, asl) VALUES (?, ?, ?)", (group_id, user_id, asl))
             else:
                 cur.execute("UPDATE ASLs SET asl=? WHERE group_id=? AND user_id=?", (asl, group_id, user_id))

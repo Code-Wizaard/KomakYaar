@@ -13,3 +13,9 @@ HELP_TEXT = (
     "هر بخش شامل دستورها و توضیحات مرتبطه.\n\n"
     "👇 روی دکمه‌های زیر کلیک کنید:"
 )
+
+if __name__ == "__main__":
+    print(f"API Token = {API_TOKEN if API_TOKEN else "no token"}")
+    print(f"DB Path = {DB_PATH}")
+    print(f"Swears file path = {SWEARS_PATH}")
+    print(f"Owner ID = {OWNER_ID if OWNER_ID else "no id"}")
