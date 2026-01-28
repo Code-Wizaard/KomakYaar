@@ -124,10 +124,10 @@ class KomakYaar():
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "لطفا تا ادمین نشدی گوه نخور")
                 return
             if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
-                bot.reply_to(message, "گروه از قبل نیز باز بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل قفل بود کصخل")
+                bot.reply_to(message, "گروه از قبل نیز باز بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل باز بود کصخل")
             else:
                 self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 0)
-                bot.reply_to(message, "گروه با موفقیت باز شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کسی خایه داره پیام بده")
+                bot.reply_to(message, "گروه با موفقیت باز شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "راحت گوه بخورید")
 
         @bot.message_handler(func=lambda m: m.text == "بی ادب شو")
         def turn_rude(message: types.Message):
