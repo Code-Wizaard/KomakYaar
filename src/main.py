@@ -34,6 +34,8 @@ class KomakYaar():
     def setup_events(self):
         @bot.message_handler(func=lambda m: m.text == "فعال شو")
         def cmd_startgroup(message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             self.db.ensure_group(message.chat.id)
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه تو ادمینی؟")
@@ -43,6 +45,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "سیکتیر کن")
         def leaver(message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خفه شو تا سیکتو نزدم")
                 return
@@ -52,6 +56,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "راهنما")
         def send_help(message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             try:
                 bot.send_message(message.from_user.id, HELP_TEXT, reply_markup=help_keyboard)
                 if message.chat.type != "private":
@@ -62,6 +68,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "ریست")
         def reset_bot_in_group(message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خفه شو")
                 return
@@ -71,6 +79,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text.startswith("تنظیم حداکثر دعوت"))
         def change_maximum(message:types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "حداقل حداکثرتو یکی میکنما!")
                 return
@@ -85,6 +95,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "قفل فحش")
         def active_swear_strict(message:types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else ":\\ گمشو از جلو چشام دور شو")
                 return
@@ -97,6 +109,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "بازکردن فحش")
         def active_swear_strict(message:types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else ":\\ گمشو از جلو چشام دور شو")
                 return
@@ -109,6 +123,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "قفل گروه")
         def lock_group(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "لطفا تا ادمین نشدی گوه نخور")
                 return
@@ -120,6 +136,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "بازکردن گروه")
         def unlock_group(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "لطفا تا ادمین نشدی گوه نخور")
                 return
@@ -131,6 +149,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "بی ادب شو")
         def turn_rude(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما ادمین نیستید")
                 return
@@ -142,6 +162,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "باادب شو")
         def turn_polite(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید")
                 return
@@ -153,6 +175,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "قفل لینک")
         def link_blocker(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "نذار دولمو به کصت لینک کنم")
                 return
@@ -164,6 +188,8 @@ class KomakYaar():
 
         @bot.message_handler(func= lambda m: m.text == "بازکردن لینک")
         def link_unblocking(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیلی دوست داری بازت کنم نه؟")
                 return
@@ -176,6 +202,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text.startswith("دستورات عمومی"))
         def public_commands(message:types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "توکی باشی که اینارو برا من تنظیم کنی")
                 return
@@ -197,6 +225,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text.startswith("بلاک بات "))
         def block_bot_handler(message:types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کصخلییییییییییی؟")
                 return
@@ -205,13 +235,26 @@ class KomakYaar():
             bot.reply_to(message, f"بات {bot_username} بلاک شد")
 
         @bot.message_handler(func=lambda m: m.text.startswith("آن‌بلاک بات "))
-        def unblock_bot_handler(message:types.Message):
+        def unblock_bot_handler(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اره حاجی راستی بهت گفتم کسایی که ادمین نیستن کیر منم نیستن؟")
                 return
             bot_username = message.text.replace("آن‌بلاک بات ", "").strip().replace("@", "")
             self.db.unblock_bot(message.chat.id, bot_username)
             bot.reply_to(message, f"بات {bot_username} آن‌بلاک شد")
+
+        @bot.message_handler(func=lambda m: m.text == "درخواست کمک")
+        def request_help_group(message: types.Message):
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to("دوست عزیز، لطفا برای کمک از ادمین گروه درخواست کنید تا این دستور را ارسال کند" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "سیشتیر بابا")
+                return
+            confirm_keyboard = types.InlineKeyboardMarkup()
+            ok_button = types.InlineKeyboardButton("تایید ✅", callback_data="ok_btn")
+            cancel_button = types.InlineKeyboardButton("لغو ❌", callback_data="cancel_req")
+            confirm_keyboard.add(ok_button, cancel_button)
+            bot.reply_to(message, "این دستور، درخواستی حاوی لینک گروه به اونر برای ورود و حل مشکل شما ارسال میکند، درصورتی که مشکل شما فوری و بدون جواب داخل راهنماها باشد کمک یار به دستور اونر در گروه از کار خواهد افتاد", reply_markup=confirm_keyboard)
 
         @bot.message_handler(func=lambda m: m.text == "بات های بلاک شده")
         def blocked_bots(message: types.Message):
@@ -245,6 +288,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "لینک")
         def create_invite_link(message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             toggle = self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
             if not self.db.is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
                 return
@@ -261,6 +306,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "فیلترها")
         def all_filters(message:types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             toggle = self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
             if not self.db.is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
                 return
@@ -273,6 +320,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text.startswith("اکو "))
         def echo_word(message:types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             toggle = self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
             if not self.db.is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
                 return
@@ -292,7 +341,7 @@ class KomakYaar():
 
         @bot.message_handler(content_types=["new_chat_members"])
         def greet(message):
-            if not self.db.is_group_active(message.chat.id):
+            if not self.db.is_group_active(message.chat.id) or self.db.is_group_blocked(message.chat.id):
                 return
 
             if message.new_chat_members[0].id == me.id:
@@ -327,9 +376,19 @@ class KomakYaar():
 
 
         @bot.callback_query_handler(func=lambda call: True)
-        def callback_handler(call):
+        def callback_handler(call: types.CallbackQuery):
             try:
                 data = call.data
+
+                if data == "ok_btn":
+                    link = bot.create_chat_invite_link(call.message.chat.id, "CREATED FOR OWNER HELP REQUEST", member_limit=1)
+                    bot.send_message(OWNER_ID, "درخواست کمک از گروهی ارسال شده\n"
+                                     f"لینک گروه : {link}\n"
+                                     f"نام گروه : {call.message.chat.first_name}")
+                    bot.edit_message_text("درخواست به اونر ارسال شد! در صورت تایید به گروه عضو خواهد شد", call.message.chat.id, call.message.message_id)
+
+                if data == "cancel_req":
+                    bot.edit_message_text("این درخواست لغو شده است!", call.message.chat.id, call.message.message_id)
 
                 if data.startswith("request:"):
                     toggle = data.split(":")[1]
@@ -538,6 +597,9 @@ class KomakYaar():
             comment_channel = message.reply_to_message
             file = open(SWEARS_PATH, "r")
             swears = []
+
+            if self.db.is_group_blocked(chat_id):
+                return
 
             if int(self.db.get_group_setting(chat_id, "GROUP_LOCK", 0)) == 1:
                 if not self.db.is_admin(chat_id, user_id):

@@ -94,6 +94,11 @@ class DataBase():
                     word TEXT
                 )
             """)
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS blocked_groups (
+                    group_id INTEGER PRIMARY KEY
+                )
+            """)
 
 
             con.commit()
@@ -413,6 +418,25 @@ class DataBase():
             cur = con.cursor()
             cur.execute("DELETE FROM blocked_words WHERE group_id=? AND word=?", (group_id, word))
             con.commit()
+
+    def ban_group(self, group_id):
+        with self._db() as con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO blocked_groups (group_id) VALUES (?)", (group_id,))
+            con.commit()
+    
+    def unban_group(self, group_id):
+        with self._db() as con:
+            cur = con.cursor()
+            cur.execute("DELETE FROM blocked_groups WHERE group_id=?", (group_id,))
+            con.commit()
+
+    def is_group_blocked(self, group_id):
+        with self._db() as con:
+            cur = con.cursor()
+            cur.execute("SELECT group_id FROM blocked_groups WHERE group_id=?", (group_id,))
+            row = cur.fetchone()
+            return True if row[0] else False
             
 
     def blocked_words(self, group_id):
