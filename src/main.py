@@ -105,6 +105,28 @@ class KomakYaar():
                 self.db.set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
                 bot.reply_to(message, "قفل غیرفعال شد")
 
+        @bot.message_handler(func=lambda m: m.text == "قفل گروه")
+        def lock_group(message: types.Message):
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "لطفا تا ادمین نشدی گوه نخور")
+                return
+            if self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0):
+                self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 1)
+                bot.reply_to(message, "گروه با موفقیت قفل شد" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "کسی خایه داره پیام بده")
+            else:
+                bot.reply_to(message, "گروه از قبل نیز قفل بود" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "گروه که از قبل قفل بود کصخل")
+
+        @bot.message_handler(func=lambda m: m.text == "بازکردن گروه")
+        def unlock_group(message: types.Message):
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "لطفا تا ادمین نشدی گوه نخور")
+                return
+            if self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0):
+                bot.reply_to(message, "گروه از قبل نیز باز بود" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "گروه که از قبل قفل بود کصخل")
+            else:
+                self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 0)
+                bot.reply_to(message, "گروه با موفقیت باز شد" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "کسی خایه داره پیام بده")
+
         @bot.message_handler(func=lambda m: m.text == "بی ادب شو")
         def turn_rude(message: types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
@@ -512,6 +534,10 @@ class KomakYaar():
             text = (message.text or "")
             file = open(SWEARS_PATH, "r")
             swears = []
+
+            if self.db.get_group_setting(chat_id, "GROUP_LOCK", 0):
+                if not self.db.is_admin(chat_id, user_id):
+                    bot.delete_message(chat_id, message.message_id)
 
             if message.via_bot:
                 bot_username = message.via_bot.username
