@@ -112,7 +112,7 @@ class KomakYaar():
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "لطفا تا ادمین نشدی گوه نخور")
                 return
-            if self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0):
+            if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
                 self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 1)
                 bot.reply_to(message, "گروه با موفقیت قفل شد" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "کسی خایه داره پیام بده")
             else:
@@ -123,7 +123,7 @@ class KomakYaar():
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "لطفا تا ادمین نشدی گوه نخور")
                 return
-            if self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0):
+            if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
                 bot.reply_to(message, "گروه از قبل نیز باز بود" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "گروه که از قبل قفل بود کصخل")
             else:
                 self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 0)
@@ -539,7 +539,7 @@ class KomakYaar():
             file = open(SWEARS_PATH, "r")
             swears = []
 
-            if self.db.get_group_setting(chat_id, "GROUP_LOCK", 0):
+            if int(self.db.get_group_setting(chat_id, "GROUP_LOCK", 0)) == 1:
                 if not self.db.is_admin(chat_id, user_id):
                     bot.delete_message(chat_id, message.message_id)
 
