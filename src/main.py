@@ -488,7 +488,7 @@ class KomakYaar():
 
             همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
             لینک پروژه :
-            https://github.com/Code-Wizaard/KomakYaar
+            https://git.codewizaard.ir/Aydin/KomakYaar
             """,
                     parse_mode="Markdown",
                     disable_web_page_preview=True,
@@ -534,6 +534,8 @@ class KomakYaar():
             chat_id = message.chat.id
             user_id = message.from_user.id
             text = (message.text or "")
+            is_comment = message.reply_to_message.is_automatic_forward
+            comment_channel = message.reply_to_message
             file = open(SWEARS_PATH, "r")
             swears = []
 
@@ -585,11 +587,11 @@ class KomakYaar():
 
                 if self.db.is_admin(chat_id, message.from_user.id):
                     return
-                bot.delete_message(chat_id, message.message_id)
                 markup = types.InlineKeyboardMarkup()
                 check_button = types.InlineKeyboardButton("نمایش کلمه", callback_data=f"swear:{repr(swears)}")
                 markup.add(check_button)
-                bot.send_message(chat_id, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم \n\n متن سانسور شده :\n >> {text}", parse_mode="Markdown", reply_markup=markup)
+                bot.reply_to(comment_channel if is_comment else message, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم \n\n متن سانسور شده :\n >> {text}", parse_mode="Markdown", reply_markup=markup)
+                bot.delete_message(chat_id, message.message_id)
 
             if text.startswith("db:"):
                 bot.reply_to(message, "دوست عزیز، شما اونر نیستید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "گوه نخور بابا این گوزا به تو نیومده")
