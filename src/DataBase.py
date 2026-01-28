@@ -19,6 +19,7 @@ class DataBase():
             CREATE TABLE IF NOT EXISTS groups (
                 group_id INTEGER PRIMARY KEY,
                 welcome_text TEXT DEFAULT '{name} عزیز خوش امدید',
+                comment_text TEXT DEFAULT 'ریاکشن یادت نره. ❤️😁',
                 rules TEXT DEFAULT NULL,
                 active INTEGER DEFAULT 0
             )
@@ -96,7 +97,7 @@ class DataBase():
 
 
             con.commit()
-            con.close()
+            
 
 
 
@@ -107,7 +108,7 @@ class DataBase():
             if not cur.fetchone():
                 cur.execute("INSERT INTO groups (group_id) VALUES (?)", (group_id,))
             con.commit()
-            con.close()
+            
 
     def reset_group(self, group_id):
         with self._db() as con:
@@ -115,21 +116,21 @@ class DataBase():
             cur.execute("DELETE FROM groups WHERE group_id=?", (group_id,))
             cur.execute("INSERT INTO groups (group_id) VALUES (?)", (group_id,))
             con.commit()
-            con.close()
+            
 
     def set_group_active(self, group_id):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("UPDATE groups SET active=1 WHERE group_id=?", (group_id,))
             con.commit()
-            con.close()
+            
 
     def is_group_active(self, group_id):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("SELECT active FROM groups WHERE group_id=?", (group_id,))
             row = cur.fetchone()
-            con.close()
+            
             return bool(row[0]) if row else False
 
 
@@ -145,7 +146,7 @@ class DataBase():
             ON CONFLICT(group_id, setting_key) DO UPDATE SET setting_value=excluded.setting_value
             """, (group_id, key, str(value)))
             con.commit()
-            con.close()
+            
 
     def get_group_setting(self, group_id, key, default=None):
         """
@@ -158,7 +159,7 @@ class DataBase():
             WHERE group_id=? AND setting_key=?
             """, (group_id, key))
             row = cur.fetchone()
-            con.close()
+            
             if row is None:
                 return default
             return row[0]
@@ -171,7 +172,7 @@ class DataBase():
             cur = con.cursor()
             cur.execute("SELECT setting_key, setting_value FROM group_settings WHERE group_id=?", (group_id,))
             rows = cur.fetchall()
-            con.close()
+            
             return {k: v for k, v in rows}
 
     def delete_group_setting(self, group_id, key):
@@ -182,28 +183,28 @@ class DataBase():
             cur = con.cursor()
             cur.execute("DELETE FROM group_settings WHERE group_id=? AND setting_key=?", (group_id, key))
             con.commit()
-            con.close()
+            
 
     def set_group_welcome(self, group_id, text):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("UPDATE groups SET welcome_text=? WHERE group_id=?", (text, group_id,))
             con.commit()
-            con.close()
+            
 
     def set_group_rules(self, group_id, text):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("UPDATE groups SET rules=? WHERE group_id=?", (text, group_id,))
             con.commit()
-            con.close()
+            
 
     def get_group_rules(self, group_id):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("SELECT rules FROM groups WHERE group_id=?", (group_id,))
             rows = cur.fetchone()
-            con.close()
+            
             return rows[0]
 
     def set_alias(self, group, user, alias):
@@ -215,7 +216,7 @@ class DataBase():
             else:
                 cur.execute("UPDATE aliases SET alias=? WHERE group_id=? AND user_id=?", (alias, group, user))
             con.commit()
-            con.close()
+            
 
 
     def get_alias(self, group, user):
@@ -237,7 +238,7 @@ class DataBase():
             else:
                 cur.execute("UPDATE ASLs SET asl=? WHERE group_id=? AND user_id=?", (asl, group_id, user_id))
             con.commit()
-            con.close()
+            
 
     def get_asl(self, group_id, user_id):
         with self._db() as con:
@@ -262,7 +263,7 @@ class DataBase():
             cur = con.cursor()
             cur.execute("SELECT keyword, response FROM tags WHERE group_id=?", (group_id,))
             rows = cur.fetchall()
-            con.close()
+            
             return {k:r for k,r in rows}
 
     def add_tag(self, group_id, keyword, response):
@@ -270,14 +271,14 @@ class DataBase():
             cur = con.cursor()
             cur.execute("INSERT INTO tags (group_id, keyword, response) VALUES (?, ?, ?)", (group_id, keyword, response))
             con.commit()
-            con.close()
+            
 
     def del_tag(self, group_id, keyword):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("DELETE FROM tags WHERE group_id=? AND keyword=?", (group_id, keyword))
             con.commit()
-            con.close()
+            
 
     def member_template(self, group_id):
         with self._db() as con:
@@ -294,7 +295,7 @@ class DataBase():
             con.commit()
             cur.execute("SELECT id FROM reports WHERE group_id=? AND target_id=? AND msg_id=?", (group_id, target_id, msg_id))
             rows = cur.fetchone()
-            con.close()
+            
             return rows[0]
 
     def check_report(self, rep_id):
@@ -307,7 +308,7 @@ class DataBase():
             bot.edit_message_text("گزارش با موفقیت توسط ادمین بررسی شد!", group_id, msg_id)
             cur.execute("UPDATE reports SET status=? WHERE id=?", ("Checked", rep_id,))
             con.commit()
-            con.close()
+            
 
 
     def add_punishment(self, group_id, user_id, p_type, until=None):
@@ -316,28 +317,28 @@ class DataBase():
             cur.execute("INSERT INTO punishments (group_id, user_id, type, until) VALUES (?, ?, ?, ?)",
                         (group_id, user_id, p_type, until))
             con.commit()
-            con.close()
+            
 
     def remove_punishment(self, group_id, user_id, p_type):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("DELETE FROM punishments WHERE group_id=? AND user_id=? AND type=?", (group_id, user_id, p_type))
             con.commit()
-            con.close()
+            
 
     def set_warn_maximum(self, group_id, max):
         with self._db() as con:
             cur = con.cursor()
             self.set_group_setting(group_id, "WARN_MAXIMUM", max)
             con.commit()
-            con.close()
+            
 
     def set_warn_punishment(self, group_id, punishment):
         with self._db() as con:
             cur = con.cursor()
             self.set_group_setting(group_id, "WARN_PUNISHMENT", punishment)
             con.commit()
-            con.close()
+            
 
     def get_user_warnings(self, group_id, user_id):
         with self._db() as con:
@@ -345,6 +346,19 @@ class DataBase():
             cur.execute("SELECT warnings FROM warnings WHERE group_id=? AND user_id=?", (group_id, user_id))
             row = cur.fetchone()
             return row[0] if row else 3
+        
+    def get_comment_message(self, group_id):
+        with self._db() as con:
+            cur = con.cursor()
+            cur.execute("SELECT comment_text FROM groups WHERE group_id=?", (group_id,))
+            row = cur.fetchone()
+            return row[0] if row else "Err fetching comment msg"
+        
+    def set_comment_message(self, group_id, message):
+        with self._db() as con:
+            cur = con.cursor()
+            cur.execute("UPDATE groups SET comment_text = ? WHERE group_id=?", (message, group_id))
+            con.commit()
 
 
     def warn_user(self, group_id, user_id):
@@ -356,35 +370,35 @@ class DataBase():
             else:
                 cur.execute("INSERT INTO warnings (group_id, user_id, warnings) VALUES (?, ?, 1)", (group_id, user_id))
             con.commit()
-            con.close()
+            
 
     def remove_all_warns(self, group_id, user_id):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("UPDATE warnings SET warnings = 0 WHERE group_id=? AND user_id=?", (group_id, user_id))
             con.commit()
-            con.close()
+            
 
     def block_bot(self, group_id, bot_username):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("INSERT INTO botBlocks (group_id, bot_username) VALUES (?, ?)", (group_id, bot_username))
             con.commit()
-            con.close()
+            
 
     def unblock_bot(self, group_id, bot_username):
         with self._db() as con:
             cur = con.cursor()  
             cur.execute("DELETE FROM botBlocks WHERE group_id=? AND bot_username=?", (group_id, bot_username))
             con.commit()
-            con.close()
+            
 
     def get_botBlocks(self, group_id):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("SELECT bot_username FROM botBlocks WHERE group_id=?", (group_id,))
             rows = cur.fetchall()
-            con.close()
+            
             return [row[0] for row in rows]
 
     def block_word(self, group_id, word):
@@ -392,21 +406,21 @@ class DataBase():
             cur = con.cursor()
             cur.execute("INSERT INTO blocked_words (group_id, word) VALUES (?, ?)", (group_id, word))
             con.commit()
-            con.close()
+            
 
     def unblock_word(self, group_id, word):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("DELETE FROM blocked_words WHERE group_id=? AND word=?", (group_id, word))
             con.commit()
-            con.close()
+            
 
     def blocked_words(self, group_id):
         with self._db() as con:
             cur = con.cursor()
             cur.execute("SELECT word FROM blocked_words WHERE group_id=?", (group_id))
             rows = cur.fetchall()
-            con.close()
+            
             return [row[0] for row in rows]
 
     def update_message(self, updates:list, version:str):
@@ -417,14 +431,14 @@ class DataBase():
             cur = con.cursor()
             cur.execute("SELECT group_id FROM groups WHERE active=1")
             rows = cur.fetchall()
-            con.close()
-            success = 0
-            err = 0
-            for row in rows:
-                try:
-                    bot.send_message(row[0], message, parse_mode="Markdown")
-                    success += 1
-                except:
-                    err += 1
-                    continue
-            return success, err
+            
+        success = 0
+        err = 0
+        for row in rows:
+            try:
+                bot.send_message(row[0], message, parse_mode="Markdown")
+                success += 1                
+            except:
+                err += 1
+                continue
+        return success, err

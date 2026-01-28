@@ -259,7 +259,7 @@ class KomakYaar():
 
                 همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
                 لینک پروژه :
-                https://github.com/Code-Wizaard/KomakYaar
+                https://git.codewizaard.ir/aydin/KomakYaar
                 """, parse_mode="Markdown", disable_web_page_preview=True)
                 return
 
@@ -497,6 +497,10 @@ class KomakYaar():
                     bot.delete_message(message.chat.id, message.message_id)
                     return
                 
+            if message.is_automatic_forward:
+                msg = self.db.get_comment_message(chat_id)
+                bot.reply_to(message, msg)
+                
             if self.db.get_group_setting(chat_id, "LINK_LOCK", 0):
                 if re.search(r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", text):
                     bot.delete_message(chat_id, message.message_id)
@@ -654,6 +658,10 @@ class KomakYaar():
                 if text == "تنظیم قوانین" and self.db.is_admin(chat_id, user_id):
                     self.db.set_group_rules(chat_id, message.reply_to_message.text)
                     bot.reply_to(message, "قوانین گروه با موفقیت تنظیم شد")
+
+                if text == "تنظیم متن کامنت" and self.db.is_admin(chat_id, user_id):
+                    self.db.set_comment_message(chat_id, message.reply_to_message.text)
+                    bot.reply_to(message, "متن کامنت زیر پست ها تغییر پیدا کرد")
 
                 if text == "اطلاعات":
                     try:
