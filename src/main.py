@@ -36,7 +36,7 @@ class KomakYaar():
         def cmd_startgroup(message):
             self.db.ensure_group(message.chat.id)
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "اخه تو ادمینی؟")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه تو ادمینی؟")
                 return
             self.db.set_group_active(message.chat.id)
             bot.reply_to(message, "✅ گروه فعال شد و بات آماده مدیریت است!")
@@ -44,7 +44,7 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "سیکتیر کن")
         def leaver(message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "خفه شو تا سیکتو نزدم")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خفه شو تا سیکتو نزدم")
                 return
             bot.reply_to(message, "ناراحت شدم، میرم سیکتیر کنم")
             bot.leave_chat(message.chat.id)
@@ -63,7 +63,7 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "ریست")
         def reset_bot_in_group(message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "خفه شو")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خفه شو")
                 return
             msg = bot.reply_to(message, "حله، الان کل رکورد گروه (بجز فیلتر ها) رو پاک و بازنویسی از صفر میکنم، انگار که هیچ اتفاقی نیوفتاده")
             self.db.reset_group(message.chat.id)
@@ -72,7 +72,7 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text.startswith("تنظیم حداکثر دعوت"))
         def change_maximum(message:types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "حداقل حداکثرتو یکی میکنما!")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "حداقل حداکثرتو یکی میکنما!")
                 return
             if message.text[len("تنظیم حداکثر دعوت"):].strip().isdigit():
                 maximum = int(message.text[len("تنظیم حداکثر دعوت"):].strip())
@@ -86,11 +86,11 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "قفل فحش")
         def active_swear_strict(message:types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else ":\\ گمشو از جلو چشام دور شو")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else ":\\ گمشو از جلو چشام دور شو")
                 return
             if int(self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) in [-1, 1]:
                 self.db.set_group_setting(message.chat.id, "SWEAR_LOCK", 1)
-                bot.reply_to(message, "ضدفحش در حال حاضر نیز فعال است" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "همینطوریشم فعال هست ستونم")
+                bot.reply_to(message, "ضدفحش در حال حاضر نیز فعال است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "همینطوریشم فعال هست ستونم")
             else:
                 self.db.set_group_setting(message.chat.id, "SWEAR_LOCK", 1)
                 bot.reply_to(message, "قفل فعال شد")
@@ -98,11 +98,11 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "بازکردن فحش")
         def active_swear_strict(message:types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else ":\\ گمشو از جلو چشام دور شو")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else ":\\ گمشو از جلو چشام دور شو")
                 return
             if int(self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) in [-1, 0]:
                 self.db.set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
-                bot.reply_to(message, "ضدفحش در حال حاضر نیز غیرفعال است" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "همینطوریشم غیرفعال هست ستونم")
+                bot.reply_to(message, "ضدفحش در حال حاضر نیز غیرفعال است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "همینطوریشم غیرفعال هست ستونم")
             else:
                 self.db.set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
                 bot.reply_to(message, "قفل غیرفعال شد")
@@ -110,31 +110,31 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "قفل گروه")
         def lock_group(message: types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "لطفا تا ادمین نشدی گوه نخور")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "لطفا تا ادمین نشدی گوه نخور")
                 return
             if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
                 self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 1)
-                bot.reply_to(message, "گروه با موفقیت قفل شد" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "کسی خایه داره پیام بده")
+                bot.reply_to(message, "گروه با موفقیت قفل شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کسی خایه داره پیام بده")
             else:
-                bot.reply_to(message, "گروه از قبل نیز قفل بود" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "گروه که از قبل قفل بود کصخل")
+                bot.reply_to(message, "گروه از قبل نیز قفل بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل قفل بود کصخل")
 
         @bot.message_handler(func=lambda m: m.text == "بازکردن گروه")
         def unlock_group(message: types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "لطفا تا ادمین نشدی گوه نخور")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "لطفا تا ادمین نشدی گوه نخور")
                 return
             if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
-                bot.reply_to(message, "گروه از قبل نیز باز بود" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "گروه که از قبل قفل بود کصخل")
+                bot.reply_to(message, "گروه از قبل نیز باز بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل قفل بود کصخل")
             else:
                 self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 0)
-                bot.reply_to(message, "گروه با موفقیت باز شد" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "کسی خایه داره پیام بده")
+                bot.reply_to(message, "گروه با موفقیت باز شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کسی خایه داره پیام بده")
 
         @bot.message_handler(func=lambda m: m.text == "بی ادب شو")
         def turn_rude(message: types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما ادمین نیستید")
                 return
-            if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1):
+            if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1:
                 self.db.set_group_setting(message.chat.id, "POLITE_MODE", 0)
                 bot.reply_to(message, "وقتشه کیری حرف بزنم")
             else:
@@ -145,7 +145,7 @@ class KomakYaar():
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید")
                 return
-            if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1):
+            if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1:
                 bot.reply_to(message, "بنده از قبل باادب بوده‌ام")
             else:
                 self.db.set_group_setting(message.chat.id, "POLITE_MODE", 1)
@@ -154,42 +154,42 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "قفل لینک")
         def link_blocker(message: types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "نذار دولمو به کصت لینک کنم")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "نذار دولمو به کصت لینک کنم")
                 return
             if int(self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1:
-                bot.reply_to(message, "ضدلینک در حال حاضر نیز فعال است" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "خیالت راحت باشه نمیگفتی هم لینکارو پاک میکردم")
+                bot.reply_to(message, "ضدلینک در حال حاضر نیز فعال است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیالت راحت باشه نمیگفتی هم لینکارو پاک میکردم")
             else:
                 self.db.set_group_setting(message.chat.id, "LINK_LOCK", 1)
-                bot.reply_to(message, "ضدلینک فعال شد" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "ردیفه ستون اوکیش کردم")
+                bot.reply_to(message, "ضدلینک فعال شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ردیفه ستون اوکیش کردم")
 
         @bot.message_handler(func= lambda m: m.text == "بازکردن لینک")
         def link_unblocking(message: types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "خیلی دوست داری بازت کنم نه؟")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیلی دوست داری بازت کنم نه؟")
                 return
             if int(self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 0:
-                bot.reply_to(message, "ضدلینک از قبل نیز غیرفعال بود" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "باع، قفل که قبلشم باز بود")
+                bot.reply_to(message, "ضدلینک از قبل نیز غیرفعال بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باع، قفل که قبلشم باز بود")
             else:
                 self.db.set_group_setting(message.chat.id, "LINK_LOCK", 0)
-                bot.reply_to(message, "ضدلینک غیرفعال شد" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "انقدر لینکو باز کردم تا جر خورد (اوکی)")
+                bot.reply_to(message, "ضدلینک غیرفعال شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انقدر لینکو باز کردم تا جر خورد (اوکی)")
 
 
         @bot.message_handler(func=lambda m: m.text.startswith("دستورات عمومی"))
         def public_commands(message:types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "توکی باشی که اینارو برا من تنظیم کنی")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "توکی باشی که اینارو برا من تنظیم کنی")
                 return
             toggle = message.text.replace("دستورات عمومی", "").strip()
             if toggle == "روشن":
                 if self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1) == 1:
-                    bot.reply_to(message, "دستورات عمومی از قبل نیز برای همه قابل استفاده بود" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "همینطوریشم روشنه ستونم")
+                    bot.reply_to(message, "دستورات عمومی از قبل نیز برای همه قابل استفاده بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "همینطوریشم روشنه ستونم")
                     return
                 else:
                     self.db.set_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
                     bot.reply_to(message, "دستورات عمومی روشن شد")
             elif toggle == "خاموش":
                 if self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1) == 0:
-                    bot.reply_to(message, "دستورات عمومی از قبل نیز غیرفعال بود" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "همینطوریشم خاموشه ستونم")
+                    bot.reply_to(message, "دستورات عمومی از قبل نیز غیرفعال بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "همینطوریشم خاموشه ستونم")
                     return
                 else:
                     self.db.set_group_setting(message.chat.id, "PUBLIC_COMMANDS", 0)
@@ -198,7 +198,7 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text.startswith("بلاک بات "))
         def block_bot_handler(message:types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "کصخلییییییییییی؟")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کصخلییییییییییی؟")
                 return
             bot_username = message.text.replace("بلاک بات ", "").strip().replace("@", "")
             self.db.block_bot(message.chat.id, bot_username)
@@ -207,7 +207,7 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text.startswith("آن‌بلاک بات "))
         def unblock_bot_handler(message:types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "اره حاجی راستی بهت گفتم کسایی که ادمین نیستن کیر منم نیستن؟")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اره حاجی راستی بهت گفتم کسایی که ادمین نیستن کیر منم نیستن؟")
                 return
             bot_username = message.text.replace("آن‌بلاک بات ", "").strip().replace("@", "")
             self.db.unblock_bot(message.chat.id, bot_username)
@@ -216,7 +216,7 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "بات های بلاک شده")
         def blocked_bots(message: types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "خفه شو بابا")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خفه شو بابا")
                 return
             blocked_bots = self.db.get_botBlocks(message.chat.id)
             if not blocked_bots:
@@ -230,7 +230,7 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "درخواست برای ورود")
         def toggle_request(message:types.Message):
             if not self.db.is_admin(message.chat.id, message.from_user.id):
-                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "توکی باشی که اینارو برا من تنظیم کنی")
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "توکی باشی که اینارو برا من تنظیم کنی")
                 return
             bot.set_message_reaction(message.chat.id, message.message_id, [types.ReactionTypeEmoji('👍')])
             toggle = bool(int(self.db.get_group_setting(message.chat.id, "creates_request", 0)))
@@ -534,7 +534,7 @@ class KomakYaar():
             chat_id = message.chat.id
             user_id = message.from_user.id
             text = (message.text or "")
-            is_comment = message.reply_to_message.is_automatic_forward
+            is_comment = message.reply_to_message.is_automatic_forward if message.reply_to_message else None
             comment_channel = message.reply_to_message
             file = open(SWEARS_PATH, "r")
             swears = []
@@ -594,7 +594,7 @@ class KomakYaar():
                 bot.delete_message(chat_id, message.message_id)
 
             if text.startswith("db:"):
-                bot.reply_to(message, "دوست عزیز، شما اونر نیستید" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "گوه نخور بابا این گوزا به تو نیومده")
+                bot.reply_to(message, "دوست عزیز، شما اونر نیستید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گوه نخور بابا این گوزا به تو نیومده")
 
             if text == "کمک یار" or text == "کمک‌یار":
                 bot.reply_to(message, f"{message.from_user.first_name}")
@@ -760,7 +760,7 @@ class KomakYaar():
                 # MUTE
                 if (text.startswith("خفه") or text.startswith("سکوت")) and self.db.is_admin(chat_id, user_id):
                     if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "من مثل بعضیا خیانتکار نیستم")
+                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "من مثل بعضیا خیانتکار نیستم")
                         return
                     parts = text.split()
                     if len(parts) >= 2 and parts[1].isdigit():
@@ -778,7 +778,7 @@ class KomakYaar():
 
                 elif (text.startswith("اخطار")) and self.db.is_admin(chat_id, user_id):
                     if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "اخه کصمغز چرا باید ادمینو اخطار بدم")
+                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه کصمغز چرا باید ادمینو اخطار بدم")
                         return
                     self.db.warn_user(chat_id, target_id)
                     warns = self.db.get_user_warnings(chat_id, target_id)
@@ -802,7 +802,7 @@ class KomakYaar():
 
                 elif (text == "حذف اخطارها") and self.db.is_admin(chat_id, user_id):
                     if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to("فرد انتخاب شده ادمین است" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "چیزی میزنی؟ اصلا مگه میتونم اخطار بدم که الان میگی حذف اخطار")
+                        bot.reply_to("فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "چیزی میزنی؟ اصلا مگه میتونم اخطار بدم که الان میگی حذف اخطار")
                         return
                     self.db.remove_all_warns(chat_id, target_id)
                     bot.reply_to(message, "شتر دیدی ندیدی! ✅")
@@ -812,7 +812,7 @@ class KomakYaar():
                 # KICK
                 elif (text == "ریم" or text == "کیک" or text == "سیک") and self.db.is_admin(chat_id, user_id):
                     if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "باشه داداش دوبار الان برات ادمینو کیک میکنم")
+                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باشه داداش دوبار الان برات ادمینو کیک میکنم")
                         return
                     bot.ban_chat_member(chat_id, target_id)
                     bot.unban_chat_member(chat_id, target_id)
@@ -822,7 +822,7 @@ class KomakYaar():
                 # BAN
                 elif (text == "بن" or text =="سیکتیر") and self.db.is_admin(chat_id, user_id):
                     if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "پاول دوروفم نمیتونه ادمین بن کنه تو دیگه چه انتظاری داری")
+                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "پاول دوروفم نمیتونه ادمین بن کنه تو دیگه چه انتظاری داری")
                         return
                     bot.ban_chat_member(chat_id, target_id)
                     self.db.add_punishment(chat_id, target_id, "ban")
@@ -830,7 +830,7 @@ class KomakYaar():
 
                 elif (text == "مخفی کاری" or text == "بن+" or text.startswith("سیک مخفی")) and self.db.is_admin(chat_id, user_id):
                     if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، نمیتوانم ادمین هارا بن یا کیک کنم" if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1) else "سیشتیر بابا همتون همینو میگید")
+                        bot.reply_to(message, "دوست عزیز، نمیتوانم ادمین هارا بن یا کیک کنم" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "سیشتیر بابا همتون همینو میگید")
                         return
                     bot.delete_message(chat_id, message.message_id)
                     bot.ban_chat_member(chat_id, target_id)
