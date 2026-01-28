@@ -112,7 +112,7 @@ class KomakYaar():
                 return
             if self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1):
                 self.db.set_group_setting(message.chat.id, "POLITE_MODE", 0)
-                bot.reply_to(message, "ازین به بعد ادب حالیم نمیشه")
+                bot.reply_to(message, "وقتشه کیری حرف بزنم")
             else:
                 bot.reply_to(message, "کصمغز منکه از قبلشم بی ادب بودم")
 
