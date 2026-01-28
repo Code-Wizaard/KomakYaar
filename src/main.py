@@ -1,10 +1,12 @@
+if __name__ == "__main__":
+    from DataBase import DataBase
+
 import sqlite3
 import time
 from telebot import TeleBot, types
 import logging
 import json
 import re
-from DataBase import DataBase
 from vars import *
 logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
 

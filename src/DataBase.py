@@ -418,7 +418,7 @@ class DataBase():
     def blocked_words(self, group_id):
         with self._db() as con:
             cur = con.cursor()
-            cur.execute("SELECT word FROM blocked_words WHERE group_id=?", (group_id))
+            cur.execute("SELECT word FROM blocked_words WHERE group_id=?", (group_id,))
             rows = cur.fetchall()
             
             return [row[0] for row in rows]
