@@ -382,9 +382,12 @@ class KomakYaar():
 
                 if data == "ok_btn":
                     link = bot.create_chat_invite_link(call.message.chat.id, "CREATED FOR OWNER HELP REQUEST", member_limit=1)
+                    markup = types.InlineKeyboardMarkup()
+                    goGroup_btn = types.InlineKeyboardButton("رفتن به گروه", link)
+                    markup.add(goGroup_btn)
                     bot.send_message(OWNER_ID, "درخواست کمک از گروهی ارسال شده\n"
-                                     f"لینک گروه : {link}\n"
-                                     f"نام گروه : {call.message.chat.first_name}")
+                                     f"نام گروه : {call.message.chat.title}",
+                                     reply_markup=markup)
                     bot.edit_message_text("درخواست به اونر ارسال شد! در صورت تایید به گروه عضو خواهد شد", call.message.chat.id, call.message.message_id)
 
                 if data == "cancel_req":
@@ -466,6 +469,37 @@ class KomakYaar():
             except Exception as e:
                 print(f"Callback error: {e}")
 
+        @bot.message_handler(commands=['bangroup'])
+        def ban_group(message: types.Message):
+            if message.from_user.id != OWNER_ID:
+                bot.reply_to(message, "تو اونر بات نیستی")
+                return
+            if not message.text.startswith("/bangroup "):
+                bot.reply_to(message, "فرمت پیامت اشتباهه")
+                return
+            group_id = message.text.replace("/bangroup ", "")
+            if not self.db.is_group_blocked(group_id):
+                self.db.ban_group(group_id)
+                bot.reply_to(message, "گروه دریافتی با موفقیت بن شد و قادر به کار با ربات نیست")
+                bot.send_message(group_id, "درود، متاسفانه، این گروه از کمک‌یــار بن شده و اعضا و ادمین های آن دیگر قادر به کار با ربات نیستند")
+            else:
+                bot.reply_to(message, "گروه از قبل هم بن شده بود")
+
+        @bot.message_handler(commands=['unbangroup'])
+        def unban_group(message: types.Message):
+            if message.from_user.id != OWNER_ID:
+                bot.reply_to(message, "فقط به حرف اونر گوش میدم")
+                return
+            if not message.text.startswith("/unbangroup "):
+                bot.reply_to(message, "فرمت پیام اشتباه است")
+                return
+            group_id = message.text.replace("/unbangroup ", "")
+            if self.db.is_group_blocked(group_id):
+                self.db.unban_group(group_id)
+                bot.reply_to(message, "گروه دریافتی با موفقیت از حالت مسدودی درآمد")
+                bot.send_message(group_id, "خبر خوب، گروه شما از حالت مسدودی خارج شده و همگی دوباره قادر به استفاده از ربات هستند")
+            else:
+                bot.reply_to(message, "گروه که اصلا بن نشده بود بخوای آن‌بن کنی")
 
         @bot.message_handler(commands=['update'])
         def handle_update_command(message):
