@@ -407,7 +407,7 @@ class KomakYaar():
                 if data == "ok_btn":
                     link = bot.create_chat_invite_link(call.message.chat.id, "CREATED FOR OWNER HELP REQUEST", member_limit=1)
                     markup = types.InlineKeyboardMarkup()
-                    goGroup_btn = types.InlineKeyboardButton("رفتن به گروه", link)
+                    goGroup_btn = types.InlineKeyboardButton("رفتن به گروه", link.invite_link)
                     markup.add(goGroup_btn)
                     bot.send_message(OWNER_ID, "درخواست کمک از گروهی ارسال شده\n"
                                      f"نام گروه : {call.message.chat.title}",
