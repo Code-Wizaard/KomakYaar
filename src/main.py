@@ -294,6 +294,8 @@ class KomakYaar():
 
         @bot.message_handler(func=lambda m: m.text == "درخواست برای ورود")
         def toggle_request(message:types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "توکی باشی که اینارو برا من تنظیم کنی")
                 return
