@@ -223,6 +223,28 @@ class KomakYaar():
                     self.db.set_group_setting(message.chat.id, "PUBLIC_COMMANDS", 0)
                     bot.reply_to(message, "دستورات عمومی خاموش شد")
 
+        @bot.message_handler(func=lambda m: m.text.startswith("مسدود کلمه "))
+        def block_word(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to("دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برو گمشو بابا")
+                return
+            word = message.text.replace("مسدود کلمه ", "")
+            self.db.block_word(message.chat.id, word)
+            bot.reply_to(message, f"کلمه ی \"{word}\" با موفقیت مسدود شد")
+
+        @bot.message_handler(func=lambda m: m.text.startswith("بازکردن کلمه "))
+        def unblock_word(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "دیگه اینورا نبینمت ناادمین بی ادب")
+                return
+            word = message.text.replace("بازکردن کلمه ", "")
+            self.db.unblock_word(message.chat.id, word)
+            bot.reply_to(message, f"کلمه ی \"{word}\" با موفقیت از مسدودی خارج شد و کاربران میتوانند آنرا در گروه ارسال کنند")
+
         @bot.message_handler(func=lambda m: m.text.startswith("بلاک بات "))
         def block_bot_handler(message:types.Message):
             if self.db.is_group_blocked(message.chat.id):
@@ -409,6 +431,7 @@ class KomakYaar():
                     rep_id = data.split(":")[1]
                     self.db.check_report(rep_id)
                     bot.answer_callback_query(call.id, "گزارش با موفقیت توسط شما بررسی شد")
+                    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
                 elif data.startswith("help_"):
                     text_map = {
