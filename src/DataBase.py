@@ -436,7 +436,7 @@ class DataBase():
             cur = con.cursor()
             cur.execute("SELECT group_id FROM blocked_groups WHERE group_id=?", (group_id,))
             row = cur.fetchone()
-            return True if row[0] else False
+            return True if row != None else False
             
 
     def blocked_words(self, group_id):
