@@ -410,7 +410,8 @@ class KomakYaar():
                     goGroup_btn = types.InlineKeyboardButton("رفتن به گروه", link.invite_link)
                     markup.add(goGroup_btn)
                     bot.send_message(OWNER_ID, "درخواست کمک از گروهی ارسال شده\n"
-                                     f"نام گروه : {call.message.chat.title}",
+                                     f"نام گروه : {call.message.chat.title}\n"
+                                     f"آیدی گروه : {call.message.chat.id}",
                                      reply_markup=markup)
                     bot.edit_message_text("درخواست به اونر ارسال شد! در صورت تایید به گروه عضو خواهد شد", call.message.chat.id, call.message.message_id)
 
