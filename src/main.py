@@ -476,6 +476,9 @@ class KomakYaar():
                 data = call.data
 
                 if data.startswith("lock_"):
+                    if not self.db.is_admin(call.message.chat.id, call.from_user.id):
+                        bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
+                        return
                     setting = data.split(":")[0].split("_")[1]
                     toggle = data.split(":")[1]
                     current_value = self.db.get_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 0)
