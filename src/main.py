@@ -131,6 +131,7 @@ class KomakYaar():
             if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
                 self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 1)
                 bot.reply_to(message, "گروه با موفقیت قفل شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کسی خایه داره پیام بده")
+                bot.set_chat_permissions(message.chat.id, types.ChatPermissions(can_send_animations=not bool(int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0))), can_send_messages=False))
             else:
                 bot.reply_to(message, "گروه از قبل نیز قفل بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل قفل بود کصخل")
 
@@ -146,6 +147,7 @@ class KomakYaar():
             else:
                 self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 0)
                 bot.reply_to(message, "گروه با موفقیت باز شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "راحت گوه بخورید")
+                bot.set_chat_permissions(message.chat.id, types.ChatPermissions(can_send_animations=not bool(int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0))), can_send_messages=True))
 
         @bot.message_handler(func=lambda m: m.text == "بی ادب شو")
         def turn_rude(message: types.Message):
@@ -225,6 +227,32 @@ class KomakYaar():
                 self.db.set_group_setting(message.chat.id, "FORWARD_LOCK", 0)
                 bot.reply_to(message, "ضدفوروارد غیرفعال شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انقدر فورواردارو باز کردم تا جر خورد (اوکی)")
 
+        @bot.message_handler(func=lambda m: m.text == "قفل گیف")
+        def gif_lock(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "نذار دولمو به کصت گیف کنم")
+                return
+            if int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1:
+                bot.reply_to(message, "ضدگیف در حال حاضر نیز فعال است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیالت راحت باشه نمیگفتی هم گیفارو پاک میکردم")
+            else:
+                self.db.set_group_setting(message.chat.id, "GIF_LOCK", 1)
+                bot.reply_to(message, "ضدگیف فعال شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ردیفه ستون اوکیش کردم")
+
+        @bot.message_handler(func=lambda m: m.text == "بازکردن گیف")
+        def gif_unlock(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیلی دوست داری بازت کنم نه؟")
+                return
+            if int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 0:
+                bot.reply_to(message, "ضدگیف از قبل نیز غیرفعال بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باع، قفل که قبلشم باز بود")
+            else:
+                self.db.set_group_setting(message.chat.id, "GIF_LOCK", 0)
+                bot.reply_to(message, "ضدگیف غیرفعال شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انقدر گیفارو باز کردم تا جر خورد (اوکی)")
+
         @bot.message_handler(func=lambda m: m.text == "پنل قفل")
         def lock_panel(message: types.Message):
             if self.db.is_group_blocked(message.chat.id):
@@ -238,6 +266,7 @@ class KomakYaar():
                 types.InlineKeyboardButton("قفل فوروارد ✅" if int(self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل فحش ✅" if int(self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل گروه ✅" if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
+                types.InlineKeyboardButton("قفل گیف ✅" if int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel")
             )
             bot.reply_to(message, "از دکمه‌های زیر برای قفل و باز کردن ویژگی‌های مختلف گروه استفاده کنید:", reply_markup=lock_keyboard)
@@ -454,11 +483,13 @@ class KomakYaar():
                         bot.answer_callback_query(call.id, "این ویژگی از قبل نیز در همین وضعیت بود" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "همینطوریشم همینه ستونم")
                         return
                     self.db.set_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 1 if toggle == "on" else 0)
+                    bot.set_chat_permissions(call.message.chat.id, types.ChatPermissions(can_send_messages=not bool(int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)))))
                     locks = {
                         "swear": "فحش",
                         "link": "لینک",
                         "forward": "فوروارد",
-                        "group": "گروه"
+                        "group": "گروه",
+                        "gif": "گیف"
                     }
                     bot.answer_callback_query(call.id, f"{locks[setting]} با موفقیت {'قفل' if toggle == 'on' else 'باز'} شد" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه ستون {setting} رو {'قفل' if toggle == 'on' else 'باز'} کردم", show_alert=True)
                     lock_keyboard = types.InlineKeyboardMarkup(row_width=1)
@@ -467,6 +498,7 @@ class KomakYaar():
                         types.InlineKeyboardButton("قفل فوروارد ✅" if int(self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل فحش ✅" if int(self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل گروه ✅" if int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل گیف ✅" if int(self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel")
                     )
                     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=lock_keyboard)
@@ -738,6 +770,11 @@ class KomakYaar():
             if int(self.db.get_group_setting(chat_id, "GROUP_LOCK", 0)) == 1:
                 if not self.db.is_admin(chat_id, user_id):
                     bot.delete_message(chat_id, message.message_id)
+
+            if int(self.db.get_group_setting(chat_id, "GIF_LOCK", 0)) == 1:
+                if message.content_type == "animation":
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.delete_message(chat_id, message.message_id)
 
             if message.via_bot:
                 bot_username = message.via_bot.username
