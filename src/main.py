@@ -199,6 +199,48 @@ class KomakYaar():
                 self.db.set_group_setting(message.chat.id, "LINK_LOCK", 0)
                 bot.reply_to(message, "ضدلینک غیرفعال شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انقدر لینکو باز کردم تا جر خورد (اوکی)")
 
+        @bot.message_handler(func=lambda m: m.text == "قفل فوروارد")
+        def forward_blocker(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "نذار دولمو به کصت فوروارد کنم")
+                return
+            if int(self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1:
+                bot.reply_to(message, "ضدفوروارد در حال حاضر نیز فعال است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیالت راحت باشه نمیگفتی هم فورواردارو پاک میکردم")
+            else:
+                self.db.set_group_setting(message.chat.id, "FORWARD_LOCK", 1)
+                bot.reply_to(message, "ضدفوروارد فعال شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ردیفه ستون اوکیش کردم")
+
+        @bot.message_handler(func=lambda m: m.text == "بازکردن فوروارد")
+        def forward_unblocking(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیلی دوست داری بازت کنم نه؟")
+                return
+            if int(self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 0:
+                bot.reply_to(message, "ضدفوروارد از قبل نیز غیرفعال بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باع، قفل که قبلشم باز بود")
+            else:
+                self.db.set_group_setting(message.chat.id, "FORWARD_LOCK", 0)
+                bot.reply_to(message, "ضدفوروارد غیرفعال شد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انقدر فورواردارو باز کردم تا جر خورد (اوکی)")
+
+        @bot.message_handler(func=lambda m: m.text == "پنل قفل")
+        def lock_panel(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "توکی باشی که اینارو برا من تنظیم کنی")
+                return
+            lock_keyboard = types.InlineKeyboardMarkup(row_width=1)
+            lock_keyboard.add(
+                types.InlineKeyboardButton("قفل لینک ✅" if int(self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
+                types.InlineKeyboardButton("قفل فوروارد ✅" if int(self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
+                types.InlineKeyboardButton("قفل فحش ✅" if int(self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
+                types.InlineKeyboardButton("قفل گروه ✅" if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
+                types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel")
+            )
+            bot.reply_to(message, "از دکمه‌های زیر برای قفل و باز کردن ویژگی‌های مختلف گروه استفاده کنید:", reply_markup=lock_keyboard)
 
         @bot.message_handler(func=lambda m: m.text.startswith("دستورات عمومی"))
         def public_commands(message:types.Message):
@@ -403,6 +445,35 @@ class KomakYaar():
         def callback_handler(call: types.CallbackQuery):
             try:
                 data = call.data
+
+                if data.startswith("lock_"):
+                    setting = data.split(":")[0].split("_")[1]
+                    toggle = data.split(":")[1]
+                    current_value = self.db.get_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 0)
+                    if (current_value == 1 and toggle == "on") or (current_value == 0 and toggle == "off"):
+                        bot.answer_callback_query(call.id, "این ویژگی از قبل نیز در همین وضعیت بود" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "همینطوریشم همینه ستونم")
+                        return
+                    self.db.set_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 1 if toggle == "on" else 0)
+                    locks = {
+                        "swear": "فحش",
+                        "link": "لینک",
+                        "forward": "فوروارد",
+                        "group": "گروه"
+                    }
+                    bot.answer_callback_query(call.id, f"{locks[setting]} با موفقیت {'قفل' if toggle == 'on' else 'باز'} شد" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه ستون {setting} رو {'قفل' if toggle == 'on' else 'باز'} کردم", show_alert=True)
+                    lock_keyboard = types.InlineKeyboardMarkup(row_width=1)
+                    lock_keyboard.add(
+                        types.InlineKeyboardButton("قفل لینک ✅" if int(self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل فوروارد ✅" if int(self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل فحش ✅" if int(self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل گروه ✅" if int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel")
+                    )
+                    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=lock_keyboard)
+
+                if data == "close_lock_panel":
+                    bot.set_message_reaction(call.message.chat.id, call.message.message_id, [types.ReactionTypeEmoji('👍')])
+                    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
                 if data == "ok_btn":
                     link = bot.create_chat_invite_link(call.message.chat.id, "CREATED FOR OWNER HELP REQUEST", member_limit=1)
