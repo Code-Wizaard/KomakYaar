@@ -867,22 +867,22 @@ class KomakYaar():
                 return
 
             if (message.text.startswith("حذف") and text != "حذف اخطارها") and self.db.is_admin(chat_id, user_id):
-                    try:
-                        n = int(message.text.replace("حذف", "").strip())
-                    except:
-                        n = 1
+                try:
+                    n = int(message.text.replace("حذف", "").strip())
+                except:
+                    n = 1
 
-                    chat_id = message.chat.id
-                    start_id = message.message_id   # id دستور "حذف ۵"
-                    err = 0
-                    for i in range(n+1):  # +1 یعنی خود دستور هم پاک بشه
-                        try:
-                            bot.delete_message(chat_id, start_id - i)
-                        except:
-                            err += 1
-                    msg = bot.send_message(chat_id, f"{n-err} با موفقیت حذف شد 🗑️")
-                    time.sleep(4)
-                    bot.delete_message(msg.chat.id, msg.message_id)
+                chat_id = message.chat.id
+                start_id = message.message_id   # id دستور "حذف ۵"
+                err = 0
+                for i in range(n+1):  # +1 یعنی خود دستور هم پاک بشه
+                    try:
+                        bot.delete_message(chat_id, start_id - i)
+                    except:
+                        err += 1
+                msg = bot.send_message(chat_id, f"{n-err} با موفقیت حذف شد 🗑️")
+                time.sleep(4)
+                bot.delete_message(msg.chat.id, msg.message_id)
 
             if message.reply_to_message:
                 target_id = message.reply_to_message.from_user.id
