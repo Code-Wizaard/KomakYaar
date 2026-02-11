@@ -536,27 +536,27 @@ class KomakYaar():
         def chosen_inline(inline_result: types.ChosenInlineResult):
             query = inline_result.query
             result_id = inline_result.result_id
-            if result_id.startswith("send:"):
-                token = result_id.removeprefix("send:")
-                infos = token.removeprefix("wh_")
-                sender_id = infos.split(":")[0]
-                receiver_username = infos.split(":")[1]
-                target_chat = None
-                try:
-                    target_chat = bot.get_chat("@" + receiver_username)
-                except:
-                    pass
-                parts = query.rsplit("@", 1)
-                message_text = parts[0].strip()
-                timestamp = infos.split(":")[2]
-                self.db.store_whisper(
-                        token=token,
-                        sender_id=sender_id,
-                        receiver_username=receiver_username.lower(),
-                        receiver_id=target_chat.id if target_chat else None,
-                        whisper=message_text,
-                        timestamp=timestamp
-                )
+            
+            token = result_id.split(":", 1)[1]
+            infos = token.split("_")[1]
+            sender_id = infos.split(":")[0]
+            receiver_username = infos.split(":")[1]
+            target_chat = None
+            try:
+                target_chat = bot.get_chat("@" + receiver_username)
+            except:
+                pass
+            parts = query.rsplit("@", 1)
+            message_text = parts[0].strip()
+            timestamp = infos.split(":")[2]
+            self.db.store_whisper(
+                token=token,
+                sender_id=sender_id,
+                receiver_username=receiver_username.lower(),
+                receiver_id=target_chat.id if target_chat else None,
+                whisper=message_text,
+                timestamp=timestamp
+            )
 
         @bot.callback_query_handler(func=lambda call: True)
         def callback_handler(call: types.CallbackQuery):
