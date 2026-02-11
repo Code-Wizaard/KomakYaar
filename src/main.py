@@ -8,6 +8,7 @@ import logging
 import json
 import re
 from vars import *
+import datetime
 logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
 
 bot = TeleBot(API_TOKEN)
@@ -470,12 +471,115 @@ class KomakYaar():
                 bot.send_message(message.chat.id, text)
 
 
+        @bot.inline_handler(func=lambda q: True)
+        def coming_soon(inline_query: types.InlineQuery):
+            query = inline_query.query.strip()
+            results = []
+
+            if not query:
+                help_result = types.InlineQueryResultArticle(
+                    id="help",
+                    title="راهنمای ارسال نجوا با کمک یار",
+                    description=f"پیام خود را به صورت زیر بنویسید تا پیام خصوصی شما به فرد مورد نظر ارسال شود:\n\n@{me.username} <متن پیام> @username",
+                    input_message_content=types.InputTextMessageContent(
+                        message_text=f"راهنمای ارسال نجوا با کمک یار\n\nبرای ارسال پیام خصوصی به فردی خاص، می‌توانید از فرمت زیر استفاده کنید:\n\n@{me.username} <متن پیام> @username\n\nدر این فرمت، @{me.username} نام کاربری ربات است، <متن پیام> محتوای پیامی است که می‌خواهید ارسال کنید، و @username نام کاربری فردی است که می‌خواهید پیام را برای او ارسال کنید."
+                    )
+                )
+                results.append(help_result)
+            else:
+                parts = query.rsplit("@", 1)
+
+                if len(parts) == 2:
+                    message_text = parts[0].strip()
+                    target_username = parts[1].strip()
+
+
+                    
+                    if message_text and target_username:
+
+                        if target_username == inline_query.from_user.username:
+                            bot.answer_inline_query(inline_query.id, [], cache_time=0, switch_pm_text="شما نمی‌توانید به خودتان پیام دهید", switch_pm_parameter="invalid_target")
+                            return
+                        elif target_username == me.username:
+                            bot.answer_inline_query(inline_query.id, [], cache_time=0, switch_pm_text="شما نمی‌توانید به خود ربات پیام دهید", switch_pm_parameter="invalid_target")
+                            return
+
+                        target = "@" + target_username
+                        target_chat = None
+
+                        try:
+                            target_chat = bot.get_chat(target)
+                        except:
+                            pass
+
+
+                        timestamp = int(time.time())
+                        token = f"wh_{inline_query.from_user.id}:{target_username}:{timestamp}"
+
+                        
+
+                        result_send = types.InlineQueryResultArticle(
+                            id=f"send:{token}",
+                            title=f"ارسال پیام به {target}",
+                            description=f"پیام شما:\n{message_text[:40] if len(message_text) > 40 else message_text}\n\nبرای ارسال این پیام به {target}، روی این پیام کلیک کنید.",
+                            input_message_content=types.InputTextMessageContent(
+                                message_text=f"پیامی از طرف @{inline_query.from_user.username}: به {target}"
+                            ),
+                            reply_markup=types.InlineKeyboardMarkup().add(
+                                types.InlineKeyboardButton("نمایش پیام", callback_data=f"showmsg:{token}")
+                            )
+                        )
+                        results.append(result_send)
+            bot.answer_inline_query(inline_query.id, results, cache_time=0)
+        
+        @bot.chosen_inline_handler(func=lambda ch: True)
+        def chosen_inline(inline_result: types.ChosenInlineResult):
+            query = inline_result.query
+            result_id = inline_result.result_id
+            if result_id.startswith("send:"):
+                token = result_id.removeprefix("send:")
+                infos = token.removeprefix("wh_")
+                sender_id = infos.split(":")[0]
+                receiver_username = infos.split(":")[1]
+                target_chat = None
+                try:
+                    target_chat = bot.get_chat("@" + receiver_username)
+                except:
+                    pass
+                parts = query.rsplit("@", 1)
+                message_text = parts[0].strip()
+                timestamp = infos.split(":")[2]
+                self.db.store_whisper(
+                        token=token,
+                        sender_id=sender_id,
+                        receiver_username=receiver_username.lower(),
+                        receiver_id=target_chat.id if target_chat else None,
+                        whisper=message_text,
+                        timestamp=timestamp
+                )
+
         @bot.callback_query_handler(func=lambda call: True)
         def callback_handler(call: types.CallbackQuery):
             try:
                 data = call.data
+                if data.startswith("showmsg:"):
+                    token = data.removeprefix("showmsg:")
+                    datab = self.db.get_whisper(token)
+                    if not datab:
+                        bot.answer_callback_query(call.id, "این پیام منقضی شده یا وجود ندارد", show_alert=True)
+                        return
+                    
+                    if (call.from_user.id == datab["sender_id"]) or (call.from_user.username.lower() == datab["receiver_username"]) or (call.from_user.id == datab["receiver_id"]):
+                        message_text = datab["whisper"]
+                        text = f"{message_text}"
+                        bot.answer_callback_query(call.id, text, show_alert=True)
+                    else:
+                        bot.answer_callback_query(call.id, "شما اجازه دیدن این پیام را ندارید", show_alert=True)
+                        return
+                    
 
-                if data.startswith("lock_"):
+
+                elif data.startswith("lock_"):
                     if not self.db.is_admin(call.message.chat.id, call.from_user.id):
                         bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
                         return
@@ -506,11 +610,11 @@ class KomakYaar():
                     )
                     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=lock_keyboard)
 
-                if data == "close_lock_panel":
+                elif data == "close_lock_panel":
                     bot.set_message_reaction(call.message.chat.id, call.message.message_id, [types.ReactionTypeEmoji('👍')])
                     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
-                if data == "ok_btn":
+                elif data == "ok_btn":
                     link = bot.create_chat_invite_link(call.message.chat.id, "CREATED FOR OWNER HELP REQUEST", member_limit=1)
                     markup = types.InlineKeyboardMarkup()
                     goGroup_btn = types.InlineKeyboardButton("رفتن به گروه", link.invite_link)
@@ -521,10 +625,10 @@ class KomakYaar():
                                      reply_markup=markup)
                     bot.edit_message_text("درخواست به اونر ارسال شد! در صورت تایید به گروه عضو خواهد شد", call.message.chat.id, call.message.message_id)
 
-                if data == "cancel_req":
+                elif data == "cancel_req":
                     bot.edit_message_text("این درخواست لغو شده است!", call.message.chat.id, call.message.message_id)
 
-                if data.startswith("request:"):
+                elif data.startswith("request:"):
                     toggle = data.split(":")[1]
                     if toggle == "on":
                         self.db.delete_group_setting(call.message.chat.id, "invite_maximum")
@@ -532,11 +636,11 @@ class KomakYaar():
                     bot.answer_callback_query(call.id, "درخواست برای دعوت با موفقیت خاموش شد" if toggle == "off" else "درخواست برای دعوت با موفقیت روشن شد")
                     bot.delete_message(call.message.chat.id, call.message.message_id)
 
-                if data.startswith("swear:"):
+                elif data.startswith("swear:"):
                     array = data.split(":")[1]
                     bot.answer_callback_query(call.id, f"لیست فحش های :\n {array}")
 
-                if data.startswith("check:"):
+                elif data.startswith("check:"):
                     rep_id = data.split(":")[1]
                     self.db.check_report(rep_id)
                     bot.answer_callback_query(call.id, "گزارش با موفقیت توسط شما بررسی شد")
@@ -696,6 +800,7 @@ class KomakYaar():
                             f"خطا یا بلاک شده: {err} گروه")
             except Exception as e:
                 bot.reply_to(message, f"❌ خطا در پخش آپدیت: {str(e)}")
+                
 
         @bot.message_handler(func=lambda m: m.chat.type == "private")
         def pv_chats(message:types.Message):

@@ -99,6 +99,15 @@ class DataBase():
                     group_id INTEGER PRIMARY KEY
                 )
             """)
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS whispers (
+                    token TEXT PRIMARY KEY,
+                    sender_id INTEGER,
+                    receiver_id INTEGER,
+                    receiver_username TEXT,
+                    whisper TEXT,
+                    timestamp INTEGER)
+                """)
 
 
             con.commit()
@@ -446,6 +455,29 @@ class DataBase():
             rows = cur.fetchall()
             
             return [row[0] for row in rows]
+        
+    def store_whisper(self, token, sender_id, receiver_id, receiver_username, whisper, timestamp):
+        with self._db() as con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO whispers (token, sender_id, receiver_id, receiver_username, whisper, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+                        (token, sender_id, receiver_id, receiver_username, whisper, timestamp))
+            con.commit()
+
+    def get_whisper(self, token):
+        with self._db() as con:
+            cur = con.cursor()
+            cur.execute("SELECT sender_id, receiver_id, receiver_username, whisper, timestamp FROM whispers WHERE token=?", (token,))
+            row = cur.fetchone()
+            if row:
+                return {
+                    "sender_id": row[0],
+                    "receiver_id": row[1],
+                    "receiver_username": row[2],
+                    "whisper": row[3],
+                    "timestamp": row[4]
+                }
+            else:
+                return None
 
     def update_message(self, updates:list, version:str):
         message = f"*نسخه جدید ربات کمک‌یار (***{version}***) منتشر شد!*\n\n"
