@@ -862,7 +862,7 @@ class KomakYaar():
             bot.reply_to(message, f"[HereYouGo](tg://user?id={user_id})", parse_mode="Markdown")
 
 
-        @bot.message_handler(func=lambda m: True)
+        @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation', 'video_note'])
         def handle_messages(message:types.Message):
             chat_id = message.chat.id
             user_id = message.from_user.id
