@@ -523,7 +523,7 @@ class KomakYaar():
                             title=f"ارسال پیام به {target}",
                             description=f"پیام شما:\n{message_text[:40] if len(message_text) > 40 else message_text}\n\nبرای ارسال این پیام به {target}، روی این پیام کلیک کنید.",
                             input_message_content=types.InputTextMessageContent(
-                                message_text=f"پیامی از طرف @{inline_query.from_user.username}: به {target}"
+                                message_text=f"💬 نجوا ارسال شده توسط @{inline_query.from_user.username}\n🗣️ برای {target}"
                             ),
                             reply_markup=types.InlineKeyboardMarkup().add(
                                 types.InlineKeyboardButton("نمایش پیام", callback_data=f"showmsg:{token}")
@@ -1194,6 +1194,8 @@ class KomakYaar():
                 admins = bot.get_chat_administrators(chat_id)
                 mentions = [f"[{a.user.first_name}](tg://user?id={a.user.id})" for a in admins]
                 bot.send_message(chat_id, " ".join(mentions), parse_mode="Markdown")
+            
+            file.close()
 
     def run(self):
         print(f"{me.username} Group Helper running...")
