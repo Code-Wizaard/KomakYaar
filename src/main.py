@@ -9,6 +9,9 @@ import json
 import re
 from vars import *
 import datetime
+import base64
+import hashlib
+from cryptography.fernet import Fernet
 logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
 
 bot = TeleBot(API_TOKEN)
@@ -549,12 +552,18 @@ class KomakYaar():
             parts = query.rsplit("@", 1)
             message_text = parts[0].strip()
             timestamp = infos.split(":")[2]
+
+            key = base64.urlsafe_b64encode(hashlib.sha256(token.encode('utf-8')).digest())
+            f = Fernet(key)
+            encrypted_text = f.encrypt(message_text.encode('utf-8'))
+            encrypted_str = base64.b64encode(encrypted_text).decode('utf-8')
+
             self.db.store_whisper(
                 token=token,
                 sender_id=sender_id,
                 receiver_username=receiver_username.lower(),
                 receiver_id=target_chat.id if target_chat else None,
-                whisper=message_text,
+                whisper=encrypted_str,
                 timestamp=timestamp
             )
 
@@ -570,7 +579,11 @@ class KomakYaar():
                         return
                     
                     if (call.from_user.id == datab["sender_id"]) or (call.from_user.username.lower() == datab["receiver_username"]) or (call.from_user.id == datab["receiver_id"]):
-                        message_text = datab["whisper"]
+                        encrypted_str = datab["whisper"]
+                        encrypted = base64.b64decode(encrypted_str)
+                        key = base64.urlsafe_b64encode(hashlib.sha256(token.encode('utf-8')).digest())
+                        f = Fernet(key)
+                        message_text = f.decrypt(encrypted).decode('utf-8')
                         text = f"{message_text}"
                         bot.answer_callback_query(call.id, text, show_alert=True)
                     else:
