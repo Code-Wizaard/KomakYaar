@@ -472,7 +472,7 @@ class KomakYaar():
 
 
         @bot.inline_handler(func=lambda q: True)
-        def coming_soon(inline_query: types.InlineQuery):
+        def send_whisper(inline_query: types.InlineQuery):
             query = inline_query.query.strip()
             results = []
 
