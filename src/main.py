@@ -879,7 +879,8 @@ class KomakYaar():
         def handle_messages(message:types.Message):
             chat_id = message.chat.id
             user_id = message.from_user.id
-            text = (message.text or "")
+            text = (message.text or message.caption) or ""
+            message.text = text
             is_comment = message.reply_to_message.is_automatic_forward if message.reply_to_message else None
             comment_channel = message.reply_to_message
             file = open(SWEARS_PATH, "r")
