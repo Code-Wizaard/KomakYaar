@@ -512,7 +512,11 @@ class KomakYaar():
                     
                     if message_text and target_username:
 
-                        if target_username == inline_query.from_user.username:
+                        if inline_query.chat_type == "private":
+                            bot.answer_callback_query(inline_query.id, [], cache_time=0, switch_pm_text="نمیتوانید در پیوی نجوا ارسال کنید", switch_pm_parameter="invalid_context")
+                            return
+
+                        elif target_username == inline_query.from_user.username:
                             bot.answer_inline_query(inline_query.id, [], cache_time=0, switch_pm_text="شما نمی‌توانید به خودتان پیام دهید", switch_pm_parameter="invalid_target")
                             return
                         elif target_username == me.username:
