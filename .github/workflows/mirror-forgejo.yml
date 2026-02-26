@@ -18,7 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0     # important: full history needed for mirror
+          fetch-depth: 0
 
       - name: Mirror to Forgejo
         uses: cssnr/mirror-repository-action@v1
