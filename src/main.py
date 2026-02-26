@@ -40,6 +40,9 @@ class KomakYaar():
         def cmd_startgroup(message):
             if self.db.is_group_blocked(message.chat.id):
                 return
+            if self.db.is_group_active(message.chat.id):
+                bot.reply_to(message, "گروه از قبل فعال شده بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل فعال بود کصخل")
+                return
             self.db.ensure_group(message.chat.id)
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه تو ادمینی؟")
@@ -74,6 +77,9 @@ class KomakYaar():
         def reset_bot_in_group(message):
             if self.db.is_group_blocked(message.chat.id):
                 return
+            if not self.db.is_group_active(message.chat.id):
+                bot.reply_to(message, "دوست عزیز، گروه شما فعال نیست که بخواد ریست بشه" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروهت فعال نیست که بخوای ریست کنی")
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خفه شو")
                 return
@@ -101,6 +107,9 @@ class KomakYaar():
         def active_swear_strict(message:types.Message):
             if self.db.is_group_blocked(message.chat.id):
                 return
+            if not self.db.is_group_active(message.chat.id):
+                bot.reply_to(message, "دوست عزیز، گروه شما فعال نیست" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروهت فعال نیست که بخوای قفل فحش کنی")
+                return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else ":\\ گمشو از جلو چشام دور شو")
                 return
@@ -114,6 +123,9 @@ class KomakYaar():
         @bot.message_handler(func=lambda m: m.text == "بازکردن فحش")
         def active_swear_strict(message:types.Message):
             if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_group_active(message.chat.id):
+                bot.reply_to(message, "دوست عزیز، گروه شما فعال نیست" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروهت فعال نیست که")
                 return
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else ":\\ گمشو از جلو چشام دور شو")
