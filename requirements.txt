@@ -1,3 +1,4 @@
 telebot
 python-dotenv
 requests
+cryptography
