@@ -1,0 +1,31 @@
+# .github/workflows/mirror-to-forgejo.yml
+
+name: Mirror to Forgejo
+
+on:
+  push:
+    branches:
+      - '**'          
+    tags:
+      - '**'          
+
+
+jobs:
+  mirror:
+    name: Push mirror → Forgejo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # important: full history needed for mirror
+
+      - name: Mirror to Forgejo
+        uses: cssnr/mirror-repository-action@v1
+        with:
+          host:       https://git.codewizaard.ir
+          username:   Aydin
+          password:   ${{ secrets.FORGEJO_TOKEN }}
+          owner:      Aydin
+          repo:       KomakYaar
+          
