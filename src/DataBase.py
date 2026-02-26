@@ -65,7 +65,7 @@ class DataBase():
             CREATE TABLE IF NOT EXISTS aliases (
                 group_id INTEGER,
                 user_id INTEGER,
-                ailas TEXT
+                alias TEXT
             )
             """)
             cur.execute("""
