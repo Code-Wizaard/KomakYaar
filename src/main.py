@@ -651,7 +651,7 @@ class KomakYaar():
 
                 elif data.startswith("swear:"):
                     array = data.split(":")[1]
-                    bot.answer_callback_query(call.id, f"لیست فحش های :\n {array}")
+                    bot.answer_callback_query(call.id, f"لیست فحش های :\n {" - ".join(eval(array))}")
 
                 elif data.startswith("check:"):
                     rep_id = data.split(":")[1]
