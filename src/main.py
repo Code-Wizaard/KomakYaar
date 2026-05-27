@@ -457,14 +457,14 @@ class KomakYaar():
 
             if message.new_chat_members[0].id == me.id:
                 bot.send_message(message.chat.id, """سلام رفقا
-                من کمک‌یـــارم، یه دستیار مدیریت گروه و یه رفیق باحال برای شما
-                از طریق من میتونین به راحتی کاربرا، مدیرا، محتوا و... گروهتون رو مدیریت کنید
-                فقط کافیه برای شروع یه ادمین بگه `فعال شو` تا کارمونو شروع کنیم
-                برای دیدن طرز کار با من کلمه ی `راهنما` رو ارسال کنید
+من کمک‌یـــارم، یه دستیار مدیریت گروه و یه رفیق باحال برای شما
+از طریق من میتونین به راحتی کاربرا، مدیرا، محتوا و... گروهتون رو مدیریت کنید
+فقط کافیه برای شروع یه ادمین بگه `فعال شو` تا کارمونو شروع کنیم
+برای دیدن طرز کار با من کلمه ی `راهنما` رو ارسال کنید
 
-                همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
-                لینک پروژه :
-                https://git.codewizaard.ir/aydin/KomakYaar
+همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
+لینک پروژه :
+https://github.com/Code-Wizaard/KomakYaar
                 """, parse_mode="Markdown", disable_web_page_preview=True)
                 return
 
@@ -555,33 +555,35 @@ class KomakYaar():
         def chosen_inline(inline_result: types.ChosenInlineResult):
             query = inline_result.query
             result_id = inline_result.result_id
+
+            if result_id != "help":
             
-            token = result_id.split(":", 1)[1]
-            infos = token.split("_")[1]
-            sender_id = infos.split(":")[0]
-            receiver_username = infos.split(":")[1]
-            target_chat = None
-            try:
-                target_chat = bot.get_chat("@" + receiver_username)
-            except:
-                pass
-            parts = query.rsplit("@", 1)
-            message_text = parts[0].strip()
-            timestamp = infos.split(":")[2]
+                token = result_id.split(":", 1)[1]
+                infos = token.split("_")[1]
+                sender_id = infos.split(":")[0]
+                receiver_username = infos.split(":")[1]
+                target_chat = None
+                try:
+                    target_chat = bot.get_chat("@" + receiver_username)
+                except:
+                    pass
+                parts = query.rsplit("@", 1)
+                message_text = parts[0].strip()
+                timestamp = infos.split(":")[2]
 
-            key = base64.urlsafe_b64encode(hashlib.sha256(token.encode('utf-8')).digest())
-            f = Fernet(key)
-            encrypted_text = f.encrypt(message_text.encode('utf-8'))
-            encrypted_str = base64.b64encode(encrypted_text).decode('utf-8')
+                key = base64.urlsafe_b64encode(hashlib.sha256(token.encode('utf-8')).digest())
+                f = Fernet(key)
+                encrypted_text = f.encrypt(message_text.encode('utf-8'))
+                encrypted_str = base64.b64encode(encrypted_text).decode('utf-8')
 
-            self.db.store_whisper(
-                token=token,
-                sender_id=sender_id,
-                receiver_username=receiver_username.lower(),
-                receiver_id=target_chat.id if target_chat else None,
-                whisper=encrypted_str,
-                timestamp=timestamp
-            )
+                self.db.store_whisper(
+                    token=token,
+                    sender_id=sender_id,
+                    receiver_username=receiver_username.lower(),
+                    receiver_id=target_chat.id if target_chat else None,
+                    whisper=encrypted_str,
+                    timestamp=timestamp
+                )
 
         @bot.callback_query_handler(func=lambda call: True)
         def callback_handler(call: types.CallbackQuery):
@@ -838,19 +840,19 @@ class KomakYaar():
                     message.chat.id,
                     """سلام 👋
 
-            به **ربات کمک‌یار** خوش اومدی 🤖
-            این ربات بهت کمک می‌کنه گروهت رو راحت‌تر مدیریت کنی.
+به **ربات کمک‌یار** خوش اومدی 🤖
+این ربات بهت کمک می‌کنه گروهت رو راحت‌تر مدیریت کنی.
 
-            📌 کاری که لازمه بکنی:
-            1. ربات رو به گروه اضافه کن.
-            2. دستور `فعال شو` رو بزن.
-            3. از این به بعد ربات همه چیز رو هندل می‌کنه.
+📌 کاری که لازمه بکنی:
+    1. ربات رو به گروه اضافه کن.
+    2. دستور `فعال شو` رو بزن.
+    3. از این به بعد ربات همه چیز رو هندل می‌کنه.
 
-            ❓ برای دیدن همه دستورات، کافیه `/help` رو بزنی.
+❓ برای دیدن همه دستورات، کافیه `/help` رو بزنی.
 
-            همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
-            لینک پروژه :
-            https://git.codewizaard.ir/Aydin/KomakYaar
+همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
+لینک پروژه :
+https://github.com/Code-Wizaard/KomakYaar
             """,
                     parse_mode="Markdown",
                     disable_web_page_preview=True,
