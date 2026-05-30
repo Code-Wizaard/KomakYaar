@@ -533,7 +533,7 @@ https://github.com/Code-Wizaard/KomakYaar
 
 
                         timestamp = int(time.time())
-                        token = f"wh_{inline_query.from_user.id}:{target_username}:{timestamp}"
+                        token = f"wh#{inline_query.from_user.id}:{target_username}:{timestamp}"
 
                         
 
@@ -559,7 +559,7 @@ https://github.com/Code-Wizaard/KomakYaar
             if result_id != "help":
             
                 token = result_id.split(":", 1)[1]
-                infos = token.split("_")[1]
+                infos = token.split("#")[1]
                 sender_id = infos.split(":")[0]
                 receiver_username = infos.split(":")[1]
                 target_chat = None
