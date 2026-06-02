@@ -1,6 +1,6 @@
 import sqlite3
 from main import bot
-from vars import DB_PATH
+from utils import DB_PATH
 
 
 class DataBase():
@@ -108,6 +108,12 @@ class DataBase():
                     whisper TEXT,
                     timestamp INTEGER)
                 """)
+            cur.execute("""
+            CREATE TABLE IF NOT EXISTS locked_posts (
+                    group_id INTEGER,
+                    post_id INTEGER
+                )
+            """)
 
 
             con.commit()
@@ -478,6 +484,25 @@ class DataBase():
                 }
             else:
                 return None
+            
+    def post_lock_status(self, group_id: int, post_id: int) -> bool:
+        with self._db() as con:
+            cur = con.cursor()
+            cur.execute("SELECT * FROM locked_posts WHERE group_id=? AND post_id=?", (group_id, post_id))
+            row = cur.fetchone()
+            return True if row else False
+
+    def lock_post(self, group_id: int, post_id: int):
+        with self._db() as con:
+            cur = con.cursor()
+            if not self.post_lock_status(group_id, post_id):
+                cur.execute("INSERT INTO locked_posts (group_id, post_id) VALUES (?, ?)", (group_id, post_id))
+            
+    def unlock_post(self, group_id: int, post_id: int):
+        with self._db() as con:
+            cur = con.cursor()
+            if self.post_lock_status(group_id, post_id):
+                cur.execute("DELETE FROM locked_posts WHERE group_id=? AND post_id=?", (group_id, post_id))
 
     def update_message(self, updates:list, version:str):
         message = f"*نسخه جدید ربات کمک‌یار (***{version}***) منتشر شد!*\n\n"

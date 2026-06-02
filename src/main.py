@@ -7,7 +7,7 @@ from telebot import TeleBot, types
 import logging
 import json
 import re
-from vars import *
+from utils import *
 import datetime
 import base64
 import hashlib
@@ -276,13 +276,32 @@ class KomakYaar():
             if not self.db.is_admin(message.chat.id, message.from_user.id):
                 bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "توکی باشی که اینارو برا من تنظیم کنی")
                 return
+            reply_to = message.reply_to_message
+            is_comment = False
             lock_keyboard = types.InlineKeyboardMarkup(row_width=1)
             lock_keyboard.add(
                 types.InlineKeyboardButton("قفل لینک ✅" if int(self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل فوروارد ✅" if int(self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل فحش ✅" if int(self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل گروه ✅" if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
-                types.InlineKeyboardButton("قفل گیف ✅" if int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
+                types.InlineKeyboardButton("قفل گیف ✅" if int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "on"))
+            )
+            while reply_to:
+                if reply_to.is_automatic_forward:
+                    is_comment = True
+                    break
+                else:
+                    if reply_to.reply_to_message:
+                        reply_to = reply_to.reply_to_message
+                    else:
+                        reply_to = None
+                        break
+            if is_comment:
+                post_lock = self.db.post_lock_status(reply_to.chat.id, reply_to.message_id)
+                lock_keyboard.add(
+                    types.InlineKeyboardButton("قفل پست ✅" if post_lock else "قفل پست ❌", callback_data="post_" + "lock" if not post_lock else "unlock")
+                )
+            lock_keyboard.add(
                 types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel")
             )
             bot.reply_to(message, "از دکمه‌های زیر برای قفل و باز کردن ویژگی‌های مختلف گروه استفاده کنید:", reply_markup=lock_keyboard)
@@ -353,6 +372,56 @@ class KomakYaar():
             bot_username = message.text.replace("آن‌بلاک بات ", "").strip().replace("@", "")
             self.db.unblock_bot(message.chat.id, bot_username)
             bot.reply_to(message, f"بات {bot_username} آن‌بلاک شد")
+        
+        @bot.message_handler(func=lambda m: m.text == "قفل پست")
+        def lock_comment_post(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برو باو کیرم دهنت")
+                return
+            reply_to = message.reply_to_message
+            is_comment = False
+            while reply_to:
+                if reply_to.is_automatic_forward:
+                    is_comment = True
+                    break
+                else:
+                    if reply_to.reply_to_message:
+                        reply_to = reply_to.reply_to_message
+                    else:
+                        reply_to = None
+                        break
+            if is_comment:
+                self.db.lock_post(message.reply_to.chat.id, message.reply_to.id)
+                bot.reply_to(message, "این پست قفل شده است 🔒\n دیگر اعضای عادی دسترسی ارسال کامنت زیر این پست را ندارد" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE",1)) == 1 else "کیر کردم تو این پست حالا خایه داری کامنت بذار این زیر")
+            else:
+                bot.reply_to(message, "پیام شما به هیچ پستی اشاره نمیکند، لطفا زیر پستی که میخواهید قفل شود این دستور را کامنت کنید")
+
+        @bot.message_handler(func=lambda m: m.text == "باز کردن پست")
+        def unlock_comment_post(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برو باو کیرم دهنت")
+                return
+            reply_to = message.reply_to_message
+            is_comment = False
+            while reply_to:
+                if reply_to.is_automatic_forward:
+                    is_comment = True
+                    break
+                else:
+                    if reply_to.reply_to_message:
+                        reply_to = reply_to.reply_to_message
+                    else:
+                        reply_to = None
+                        break
+            if is_comment:
+                self.db.unlock_post(message.reply_to_message.chat.id, message.reply_to_message.id)
+                bot.reply_to(message, "پست باز شد 🔓\n دیگر تمامی اعضا قادر به ارسال کامنت زیر این پست خواهند بود" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE",1)) == 1 else "تا کی تبعیض، قفل رو جر دادم برید کامنتارو بگایید")
+            else:
+                bot.reply_to(message, "پیام شما به هیچ پستی اشاره نمیکند، لطفا زیر پستی که میخواهید قفل شود این دستور را کامنت کنید")
 
         @bot.message_handler(func=lambda m: m.text == "درخواست کمک")
         def request_help_group(message: types.Message):
@@ -459,7 +528,7 @@ class KomakYaar():
                 bot.send_message(message.chat.id, """سلام رفقا
 من کمک‌یـــارم، یه دستیار مدیریت گروه و یه رفیق باحال برای شما
 از طریق من میتونین به راحتی کاربرا، مدیرا، محتوا و... گروهتون رو مدیریت کنید
-فقط کافیه برای شروع یه ادمین بگه `فعال شو` تا کارمونو شروع کنیم
+فقط کافیه برای شروع بهم دسترسی های کامل بدید و یه ادمین بگه `فعال شو` تا کارمونو شروع کنیم
 برای دیدن طرز کار با من کلمه ی `راهنما` رو ارسال کنید
 
 همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
@@ -614,6 +683,8 @@ https://github.com/Code-Wizaard/KomakYaar
                     if not self.db.is_admin(call.message.chat.id, call.from_user.id):
                         bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
                         return
+                    reply_to = call.message.reply_to_message
+                    is_comment = False
                     setting = data.split(":")[0].split("_")[1]
                     toggle = data.split(":")[1]
                     current_value = self.db.get_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 0)
@@ -636,10 +707,71 @@ https://github.com/Code-Wizaard/KomakYaar
                         types.InlineKeyboardButton("قفل فوروارد ✅" if int(self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل فحش ✅" if int(self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل گروه ✅" if int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل گیف ✅" if int(self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل گیف ✅" if int(self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on"))
+                    )
+                    while reply_to:
+                        if reply_to.is_automatic_forward:
+                            is_comment = True
+                            break
+                        else:
+                            if reply_to.reply_to_message:
+                                reply_to = reply_to.reply_to_message
+                            else:
+                                reply_to = None
+                                break
+                    if is_comment:
+                        post_lock = self.db.post_lock_status(call.message.chat.id, reply_to.message_id)
+                        lock_keyboard.add(
+                            types.InlineKeyboardButton("قفل پست ✅" if post_lock else "قفل پست ❌", callback_data="post_" + "lock" if not post_lock else "unlock")
+                        )
+                    lock_keyboard.add(
                         types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel")
                     )
                     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=lock_keyboard)
+
+                elif data.startswith("post_"):
+                    if not self.db.is_admin(call.message.chat.id, call.from_user.id):
+                        bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید", show_alert=True)
+                    reply_to = call.message.reply_to_message
+                    is_comment = False
+                    while reply_to:
+                        if reply_to.is_automatic_forward:
+                            is_comment = True
+                            break
+                        else:
+                            if reply_to.reply_to_message:
+                                reply_to = reply_to.reply_to_message
+                            else:
+                                reply_to = None
+                                break
+                    data = call.data
+                    status = data.split("_")[1]
+                    chat_id = reply_to.chat.id
+                    post_id = reply_to.message_id
+                    if status == "lock":
+                        self.db.lock_post(chat_id, post_id)
+                    else:
+                        self.db.unlock_post(chat_id, post_id)
+                    bot.answer_callback_query(call.id, f"قفل پست با موفقیت {"فعال" if status == "lock" else "غیرفعال"} شد ✅", show_alert=True)
+                    lock_keyboard = types.InlineKeyboardMarkup(row_width=1)
+                    lock_keyboard.add(
+                        types.InlineKeyboardButton("قفل لینک ✅" if int(self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل فوروارد ✅" if int(self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل فحش ✅" if int(self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل گروه ✅" if int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل گیف ✅" if int(self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on"))
+                    )
+                    
+                    if is_comment:
+                        post_lock = self.db.post_lock_status(chat_id, post_id)
+                        lock_keyboard.add(
+                            types.InlineKeyboardButton("قفل پست ✅" if post_lock else "قفل پست ❌", callback_data="post_" + "lock" if not post_lock else "unlock")
+                        )
+                    lock_keyboard.add(
+                        types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel")
+                    )
+                    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=lock_keyboard)
+
 
                 elif data == "close_lock_panel":
                     bot.set_message_reaction(call.message.chat.id, call.message.message_id, [types.ReactionTypeEmoji('👍')])
@@ -838,21 +970,25 @@ https://github.com/Code-Wizaard/KomakYaar
             if message.text == "/start":
                 bot.send_message(
                     message.chat.id,
-                    """سلام 👋
+                    f"""سلام 👋
 
 به **ربات کمک‌یار** خوش اومدی 🤖
 این ربات بهت کمک می‌کنه گروهت رو راحت‌تر مدیریت کنی.
 
 📌 کاری که لازمه بکنی:
     1. ربات رو به گروه اضافه کن.
-    2. دستور `فعال شو` رو بزن.
-    3. از این به بعد ربات همه چیز رو هندل می‌کنه.
+    2. بهش دسترسی های لازم رو بدی
+    3. دستور `فعال شو` رو بزن.
+    4. از این به بعد ربات همه چیز رو هندل می‌کنه.
 
 ❓ برای دیدن همه دستورات، کافیه `/help` رو بزنی.
 
 همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
 لینک پروژه :
 https://github.com/Code-Wizaard/KomakYaar
+
+Made with ❤️ by Code-Wizaard and other contributors
+KomakYaar v{VERSION}
             """,
                     parse_mode="Markdown",
                     disable_web_page_preview=True,
@@ -860,6 +996,17 @@ https://github.com/Code-Wizaard/KomakYaar
             )
             elif message.text == "/help":
                 bot.send_message(message.from_user.id, HELP_TEXT, parse_mode="Markdown", reply_markup=help_keyboard)
+
+        @bot.message_handler(commands=['start'], func=lambda m: m.chat.type in ["group", "supergroup"])
+        def group_starts(message: types.Message):
+            bot.reply_to(message, f"""درود و مهر ❤️👋
+من کمک یارم، یه ربات خودمونی همه کاره برای مدیریت انواع گروه ها، از گروه های دوستانه و رفاقتی تا گروه های رسمی و پرجمعیت و همچنین گروه های کامنت
+خیلی خوشحالم که اینجام، اگر دسترسی های ادمین رو بهم دادی، با فرستادن دستور فعال شو من میتونم کارمو شروع کنم
+اگرم تا الان من فعال هستم که چه بهتر، گوش به زنگم
+همچنین اگر دلتون میخواد که یه کمک‌یــــــــار برای خودتون داشته باشید یا روی امنیت چیزایی که استفاده میکنید حساسید، بهتره که بگم کمک‌یـــــار یه ربات کاملا اوپن سورسه و میتونید کدش رو ببینید و اگر تونستید و ایده ای داشتید روش مشارکت کنید
+لینک سورس :
+https://github.com/Code-Wizaard/KomakYaar
+""", disable_web_page_preview=True)
 
         @bot.message_handler(func= lambda m: m.from_user.id == OWNER_ID and m.text.startswith("db:"))
         def execute_to_db(message):
@@ -899,13 +1046,25 @@ https://github.com/Code-Wizaard/KomakYaar
             user_id = message.from_user.id
             text = (message.text or message.caption) or ""
             message.text = text
-            is_comment = message.reply_to_message.is_automatic_forward if message.reply_to_message else None
+            is_comment = False
+            reply_to = message.reply_to_message
             comment_channel = message.reply_to_message
             file = open(SWEARS_PATH, "r")
             swears = []
 
             if self.db.is_group_blocked(chat_id):
                 return
+            
+            while reply_to:
+                if reply_to.is_automatic_forward:
+                    is_comment = True
+                    break
+                else:
+                    if reply_to.reply_to_message:
+                        reply_to = reply_to.reply_to_message
+                    else:
+                        reply_to = None
+                        break
 
             if int(self.db.get_group_setting(chat_id, "GROUP_LOCK", 0)) == 1:
                 if not self.db.is_admin(chat_id, user_id):
@@ -926,6 +1085,11 @@ https://github.com/Code-Wizaard/KomakYaar
             if message.is_automatic_forward:
                 msg = self.db.get_comment_message(chat_id)
                 bot.reply_to(message, msg)
+
+            if is_comment:
+                post = self.db.post_lock_status(message.reply_to_message.chat.id, message.reply_to_message.id)
+                if post:
+                    bot.delete_message(message.chat.id, message.message_id)
                 
             if self.db.get_group_setting(chat_id, "LINK_LOCK", 0):
                 if re.search(r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", text):
@@ -981,14 +1145,24 @@ https://github.com/Code-Wizaard/KomakYaar
                     bot.reply_to(message, r)
                     break
 
-            if text.startswith("سقف اخطار") and self.db.is_admin(chat_id, user_id):
+            if text.startswith("سقف اخطار"):
+                if not self.db.is_admin(chat_id, user_id):
+                    bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "همون سقف تو کونت")
+                    return
                 words = text.split(" ")
                 words.remove("سقف")
                 words.remove("اخطار")
-                self.db.set_warn_maximum(chat_id, words[0])
-                bot.reply_to(message, "سقف اخطارها با موفقیت تنظیم شد")
+                if words[0].isdigit():
+                    digit = convert_digit(words[0])
+                    self.db.set_warn_maximum(chat_id, digit)
+                    bot.reply_to(message, "سقف اخطارها با موفقیت تنظیم شد")
+                else:
+                    bot.reply_to(message, f"{words[0]} خودتی")
 
-            if text.startswith("حذف فیلتر") and self.db.is_admin(chat_id, user_id):
+            if text.startswith("حذف فیلتر"):
+                if not self.db.is_admin(chat_id, user_id):
+                    bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف")
+                    return
                 # اگر ریپلای شده روی پیام کلیدواژه
                 if message.reply_to_message:
                     keyword = message.reply_to_message.text.strip()
@@ -1003,7 +1177,10 @@ https://github.com/Code-Wizaard/KomakYaar
                     bot.reply_to(message, "⚠️ فرمت درست: حذف فیلتر روی ریپلای یا با نوشتن کلیدواژه")
                 return
 
-            if (message.text.startswith("حذف") and text != "حذف اخطارها") and self.db.is_admin(chat_id, user_id):
+            if (message.text.startswith("حذف") and text != "حذف اخطارها"):
+                if not self.db.is_admin(chat_id, user_id):
+                    bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "امیدوارم از زندگی حذف شی")
+                    return
                 try:
                     n = int(message.text.replace("حذف", "").strip())
                 except:
@@ -1035,7 +1212,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         bot.reply_to(message, "⚠️ فرمت درست: ریپلای روی پیام و نوشتن: فیلتر پاسخ")
                     return
 
-                if text == "حذف":
+                if text == "حذف" and self.db.is_admin(chat_id, user_id):
                     bot.delete_message(chat_id, message.reply_to_message.message_id)
                     msg = bot.reply_to(message, "پیام پاک شد 🗑️")
                     time.sleep(4)
@@ -1059,7 +1236,10 @@ https://github.com/Code-Wizaard/KomakYaar
                             except:
                                 pass
 
-                if text.startswith("ثبت لقب") and (self.db.is_admin(chat_id, user_id) or target_id == user_id):
+                if text.startswith("ثبت لقب"):
+                    if not (self.db.is_admin(chat_id, user_id) or target_id == user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "بدو بینم")
+                        return
                     alias = text[len("ثبت لقب"):].strip()
                     self.db.set_alias(chat_id, target_id, alias)
                     bot.reply_to(message, f"لقب {alias} با موفقیت برای این کاربر ثبت شد")
@@ -1068,7 +1248,10 @@ https://github.com/Code-Wizaard/KomakYaar
                     alias = self.db.get_alias(chat_id, target_id).strip()
                     bot.reply_to(message, f"لقب ثبت شده برای این کاربر :\n {alias}")
 
-                if text.startswith("ثبت اصل") and (self.db.is_admin(chat_id, user_id) or target_id == user_id):
+                if text.startswith("ثبت اصل"):
+                    if not (self.db.is_admin(chat_id, user_id) or target_id == user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کیرم تو اصلت")
+                        return
                     asl = text[len("ثبت اصل"):].strip()
                     self.db.set_asl(chat_id, target_id, asl)
                     bot.reply_to(message, f"اصل {asl} با موفقیت برای این کاربر ثبت شد")
@@ -1086,8 +1269,11 @@ https://github.com/Code-Wizaard/KomakYaar
                     bot.reply_to(message, "قوانین گروه با موفقیت تنظیم شد")
 
                 if text == "تنظیم متن کامنت" and self.db.is_admin(chat_id, user_id):
-                    self.db.set_comment_message(chat_id, message.reply_to_message.text)
-                    bot.reply_to(message, "متن کامنت زیر پست ها تغییر پیدا کرد")
+                    if message.reply_to_message:
+                        self.db.set_comment_message(chat_id, message.reply_to_message.text)
+                        bot.reply_to(message, "متن کامنت زیر پست ها تغییر پیدا کرد")
+                    else:
+                        bot.reply_to(message, "خب دقیقا متن رو به چی تغییر باید بدم :\\")
 
                 if text == "اطلاعات":
                     try:
@@ -1131,9 +1317,12 @@ https://github.com/Code-Wizaard/KomakYaar
                         bot.send_message(chat_id, f"❌ خطا در گرفتن اطلاعات کاربر:\n<code>{e}</code>", parse_mode="HTML")
 
                 # MUTE
-                if (text.startswith("خفه") or text.startswith("سکوت")) and self.db.is_admin(chat_id, user_id):
+                if (text.startswith("خفه") or text.startswith("سکوت")):
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه کصخل اگر من میتونستم ادمینو سکوت بدم اول از همه خودتو میوت میکردم")
+                        return
                     if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "من مثل بعضیا خیانتکار نیستم")
+                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "حاجی بی شوخی خیلی کصخلی طرف ادمینه من اینو چیکارش کنم")
                         return
                     parts = text.split()
                     if len(parts) >= 2 and parts[1].isdigit():
@@ -1149,7 +1338,10 @@ https://github.com/Code-Wizaard/KomakYaar
                             self.db.add_punishment(chat_id, target_id, "mute", int(time.time()+mins*60))
                             bot.reply_to(message, f"🔇 کاربر سکوت داده شد برای {mins} دقیقه.")
 
-                elif (text.startswith("اخطار")) and self.db.is_admin(chat_id, user_id):
+                elif (text.startswith("اخطار")):
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برنامه نویس : خداوکیلی مغزم گوزید دیگه نمیدونم چی بنویسم")
+                        return
                     if self.db.is_admin(chat_id, target_id):
                         bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه کصمغز چرا باید ادمینو اخطار بدم")
                         return
@@ -1183,7 +1375,10 @@ https://github.com/Code-Wizaard/KomakYaar
 
 
                 # KICK
-                elif (text == "ریم" or text == "کیک" or text == "سیک") and self.db.is_admin(chat_id, user_id):
+                elif (text == "ریم" or text == "کیک" or text == "سیک"):
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "فان فکت : ادمین ها نمیتونن همدیگه رو کیک کنن")
+                        return
                     if self.db.is_admin(chat_id, target_id):
                         bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باشه داداش دوبار الان برات ادمینو کیک میکنم")
                         return
@@ -1193,7 +1388,10 @@ https://github.com/Code-Wizaard/KomakYaar
                     bot.reply_to(message, "👢 کاربر کیک شد!")
 
                 # BAN
-                elif (text == "بن" or text =="سیکتیر") and self.db.is_admin(chat_id, user_id):
+                elif (text == "بن" or text =="سیکتیر"):
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "یعنی کیر تو مغزت که نمیدونی این ادمینه")
+                        return
                     if self.db.is_admin(chat_id, target_id):
                         bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "پاول دوروفم نمیتونه ادمین بن کنه تو دیگه چه انتظاری داری")
                         return
@@ -1201,7 +1399,10 @@ https://github.com/Code-Wizaard/KomakYaar
                     self.db.add_punishment(chat_id, target_id, "ban")
                     bot.reply_to(message, "⛔ کاربر بن شد!")
 
-                elif (text == "مخفی کاری" or text == "بن+" or text.startswith("سیک مخفی")) and self.db.is_admin(chat_id, user_id):
+                elif (text == "مخفی کاری" or text == "بن+" or text.startswith("سیک مخفی")):
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "بچگیات هیتمن زیاد دیدی فکر کردی همه رو میشه بن کرد؟")
+                        return
                     if self.db.is_admin(chat_id, target_id):
                         bot.reply_to(message, "دوست عزیز، نمیتوانم ادمین هارا بن یا کیک کنم" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "سیشتیر بابا همتون همینو میگید")
                         return
