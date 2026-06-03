@@ -6,7 +6,7 @@ API_TOKEN = os.getenv("TOKEN")
 DB_PATH = os.getenv("DB_PATH", "groups.db")
 SWEARS_PATH = os.getenv("SWEARS_PATH", "swears.txt")
 OWNER_ID = int(os.getenv("OWNER_ID"))
-VERSION = "1.4.3"
+VERSION = "1.4.4"
 
 HELP_TEXT = (
     "📖 راهنمای استفاده از ربات کمک‌یار\n\n"
@@ -21,7 +21,7 @@ def convert_digit(text: str) -> str:
     english_digits = '0123456789' * 2
     
     translation_table = str.maketrans(persian_arabic_digits, english_digits)
-    return text.translate(translation_table)
+    return int(text.translate(translation_table))
 
 if __name__ == "__main__":
     print(f"API Token = {API_TOKEN if API_TOKEN else "no token"}")

@@ -497,6 +497,22 @@ class KomakYaar():
                 string += f"{filter} : {response}\n"
             bot.reply_to(message, string)
 
+        @bot.message_handler(func=lambda m: m.text == "تعیین مجازات اخطار")
+        def set_warn_punish(message: types.Message):
+            if self.db.is_group_blocked(message.chat.id):
+                return
+            if not self.db.is_admin(message.chat.id, message.from_user.id):
+                bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ببند در دهن گاله‌تا")
+                return
+            warn_punish = self.db.get_group_setting(message.chat.id, "WARN_PUNISHMENT", "kick")
+            keyboard = types.InlineKeyboardMarkup()
+            keyboard.add(
+                types.InlineKeyboardButton(f"کیک {"✅" if warn_punish == "kick" else "❌"}", callback_data="warn_punish:kick"),
+                types.InlineKeyboardButton(f"بن {"✅" if warn_punish == "ban" else "❌"}", callback_data="warn_punish:ban"),
+                types.InlineKeyboardButton(f"میوت {"✅" if warn_punish == "mute" else "❌"}", callback_data="warn_punish:mute")
+            )
+            bot.reply_to(message, "از دکمه‌های زیر برای انتخاب نوع مجازات استفاده کنید", reply_markup=keyboard)
+
 
         @bot.message_handler(func=lambda m: m.text.startswith("اکو "))
         def echo_word(message:types.Message):
@@ -776,6 +792,26 @@ https://github.com/Code-Wizaard/KomakYaar
                 elif data == "close_lock_panel":
                     bot.set_message_reaction(call.message.chat.id, call.message.message_id, [types.ReactionTypeEmoji('👍')])
                     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+
+                elif data.startswith("warn_punish:"):
+                    punish_type = data.split(":")[1]
+                    if not self.db.is_admin(call.message.chat.id, call.from_user.id):
+                        bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "برو باو بگو بزرگ‌ترت بیاد", show_alert=True)
+                        return
+                    self.db.set_group_setting(call.message.chat.id, "WARN_PUNISHMENT", punish_type)
+                    punish_map = {
+                        "kick": "کیک",
+                        "ban": "بن",
+                        "mute": "میوت"
+                    }
+                    bot.answer_callback_query(call.id, f"نوع مجازات اخطار با موفقیت به {punish_map.get(punish_type, punish_type)} تغییر کرد" if int(self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه اخطار رو گذاشتم رو {punish_map.get(punish_type, punish_type)}", show_alert=True)
+                    keyboard = types.InlineKeyboardMarkup()
+                    keyboard.add(
+                        types.InlineKeyboardButton(f"کیک {'✅' if punish_type == 'kick' else '❌'}", callback_data="warn_punish:kick"),
+                        types.InlineKeyboardButton(f"بن {'✅' if punish_type == 'ban' else '❌'}", callback_data="warn_punish:ban"),
+                        types.InlineKeyboardButton(f"میوت {'✅' if punish_type == 'mute' else '❌'}", callback_data="warn_punish:mute")
+                    )
+                    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=keyboard)
 
                 elif data == "ok_btn":
                     link = bot.create_chat_invite_link(call.message.chat.id, "CREATED FOR OWNER HELP REQUEST", member_limit=1)
@@ -1349,7 +1385,7 @@ https://github.com/Code-Wizaard/KomakYaar
                     warns = self.db.get_user_warnings(chat_id, target_id)
                     warn_max = self.db.get_group_setting(chat_id, "WARN_MAXIMUM", 3)
                     bot.reply_to(message, f"کاربر با موفقیت اخطار داده شد! ⚠️\n اخطار های کاربر : {warns}/{warn_max}")
-                    if warns >= warn_max:
+                    if int(warns) >= int(warn_max):
                         punish = self.db.get_group_setting(chat_id, "WARN_PUNISHMENT", "kick")
                         if punish == "kick":
                             bot.ban_chat_member(chat_id, target_id)
@@ -1362,7 +1398,7 @@ https://github.com/Code-Wizaard/KomakYaar
                             bot.reply_to(message, "⛔ کاربر بن شد!")
                         elif punish == "mute":
                             bot.restrict_chat_member(chat_id, target_id, can_send_messages=False)
-                            bot.reply_to("کاربر میوت شد! 🤐")
+                            bot.reply_to(message, "کاربر میوت شد! 🤐")
                         self.db.remove_all_warns(chat_id, target_id)
 
                 elif (text == "حذف اخطارها") and self.db.is_admin(chat_id, user_id):
