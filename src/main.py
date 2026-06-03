@@ -178,7 +178,7 @@ class KomakYaar():
             else:
                 bot.reply_to(message, "کصمغز منکه از قبلشم بی ادب بودم")
 
-        @bot.message_handler(func=lambda m: m.text == "باادب شو")
+        @bot.message_handler(func=lambda m: m.text in ["باادب شو", "با ادب شو"])
         def turn_polite(message: types.Message):
             if self.db.is_group_blocked(message.chat.id):
                 return
