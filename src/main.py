@@ -17,17 +17,33 @@ logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
 bot = TeleBot(API_TOKEN)
 me = bot.get_me()
 
-# دکمه‌های بخش‌ها
-help_keyboard = types.InlineKeyboardMarkup(row_width=1)
+# Main help keyboard - categorized
+help_keyboard = types.InlineKeyboardMarkup(row_width=2)
 help_keyboard.add(
-    types.InlineKeyboardButton("👮 مدیریت اعضا", callback_data="help_admins"),
-    types.InlineKeyboardButton("🏷️ فیلترها و پاسخ خودکار", callback_data="help_tags"),
+    types.InlineKeyboardButton("👥 مدیریت اعضا", callback_data="help_members"),
+    types.InlineKeyboardButton("🔒 قفل‌ها و محدودیت‌ها", callback_data="help_locks"),
+    types.InlineKeyboardButton("🎯 فیلترها و پاسخ خودکار", callback_data="help_filters"),
+    types.InlineKeyboardButton("💬 دستورات عمومی", callback_data="help_public"),
+    types.InlineKeyboardButton("🔗 لینک و دعوت", callback_data="help_invite"),
     types.InlineKeyboardButton("⚙️ تنظیمات گروه", callback_data="help_settings"),
-    types.InlineKeyboardButton("🔗 لینک دعوت", callback_data="help_invite"),
+    types.InlineKeyboardButton("📝 گزارش و اخطار", callback_data="help_warnings"),
+    types.InlineKeyboardButton("🎭 لقب و اصل", callback_data="help_profile"),
+    types.InlineKeyboardButton("🕵️ نجوا (پیام خصوصی)", callback_data="help_whisper"),
+    types.InlineKeyboardButton("❓ سوالات متداول", callback_data="help_faq")
 )
-start_keyboard = types.InlineKeyboardMarkup(row_width=1)
+
+# Start keyboard for private chat
+start_keyboard = types.InlineKeyboardMarkup(row_width=2)
 start_keyboard.add(
-    types.InlineKeyboardButton("اضافه کردن ربات به گروه", url=f"https://t.me/{me.username}?startgroup")
+    types.InlineKeyboardButton("➕ اضافه کردن به گروه", url=f"https://t.me/{me.username}?startgroup"),
+    types.InlineKeyboardButton("📖 راهنمای سریع", callback_data="help_main"),
+    types.InlineKeyboardButton("💻 گیت‌هاب پروژه", url="https://github.com/Code-Wizaard/KomakYaar")
+)
+
+# Back button keyboard
+back_keyboard = types.InlineKeyboardMarkup(row_width=1)
+back_keyboard.add(
+    types.InlineKeyboardButton("🔙 برگشت به منوی اصلی", callback_data="help_main")
 )
 
 class KomakYaar():
@@ -66,7 +82,7 @@ class KomakYaar():
             if self.db.is_group_blocked(message.chat.id):
                 return
             try:
-                bot.send_message(message.from_user.id, HELP_TEXT, reply_markup=help_keyboard)
+                bot.send_message(message.from_user.id, HELP_TEXT, parse_mode="Markdown", reply_markup=help_keyboard)
                 if message.chat.type != "private":
                     bot.reply_to(message, "📬 پنل راهنما به پیوی شما ارسال شد!")
             except:
@@ -849,66 +865,189 @@ https://github.com/Code-Wizaard/KomakYaar
                     bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
                 elif data.startswith("help_"):
-                    text_map = {
-                        "help_admins": (
-                            "👮 مدیریت اعضا:\n"
-                            "- `خفه/سکوت <مدت>` : سکوت دادن کاربر (بر حسب دقیقه)\n"
-                            "- `آن‌میوت` : آزاد کردن کاربر از سکوت\n"
-                            "- `سیک/ریم/کیک` : کیک کردن کاربر\n"
-                            "- `بن / سیکتیر` : بن کردن کاربر\n"
-                            "- `آن‌بن` : آزاد کردن کاربر از بن\n"
-                            "- `سیک مخفی/بن+` : کاربر بدون سر و صدا بن میشه و پیام هم پاک میشه\n"
-                            "- `اخطار` : کاربر اخطار داده میشه، میتونید با دستور `سقف اخطار` تعداد اخطارو تغییر بدید که پیش فرض روی ۳ هست و در صورت رسیدن به این تعداد کاربر از گروه کیک میشه\n"
-                            "- `حذف اخطارها`: حذف تمامی اخطارهای کاربر و تنظیم اون روی صفر\n"
-                            "- `گزارش` : ریپلای روی پیام کاربر برای گزارش دادن به ادمین‌ها\n"
-                            "- `مسدود کلمه <کلمه مورد نظر>`: مسدود کردن کلمه از استفاده شدن در گروه\n"
-                            "- `بازکردن کلمه <کلمه مورد نظر>`: بازکردن کلمه ی مسدود شده برای استفاده در گروه\n"
+                    help_contents = {
+                        "help_main": HELP_TEXT,
+                        
+                        "help_members": (
+                            "👥 **مدیریت اعضا**\n\n"
+                            "**دستورات پایه:**\n"
+                            "• `اخطار` (ریپلای) - اخطار به کاربر\n"
+                            "• `حذف اخطارها` (ریپلای) - پاک کردن اخطارها\n"
+                            "• `سقف اخطار <عدد>` - تنظیم حداکثر اخطار (پیش‌فرض: 3)\n\n"
+                            "**مجازات‌ها:**\n"
+                            "• `خفه <دقیقه>` یا `سکوت` - میوت موقت\n"
+                            "• `آن‌میوت` - برداشتن میوت\n"
+                            "• `کیک` یا `سیک` یا `ریم` - اخراج از گروه\n"
+                            "• `بن` یا `سیکتیر` - بن دائم\n"
+                            "• `بن+` یا `سیک مخفی` - بن + حذف پیام فرمان\n"
+                            "• `آن‌بن` - برداشتن بن\n\n"
+                            "**تنظیم مجازات اخطار:**\n"
+                            "• `تعیین مجازات اخطار` - انتخاب نوع مجازات (کیک/بن/میوت)"
                         ),
-                        "help_tags": (
-                            "🏷️ فیلترها و پاسخ خودکار:\n"
-                            "- ریپلای روی پیام + `فیلتر <پاسخ>` : اضافه کردن پاسخ خودکار\n"
-                            "- ریپلای روی پیام + `حذف فیلتر` : حذف پاسخ خودکار\n"
-                            "- `فیلترها` : نمایش لیست همه فیلترهای گروه\n"
+                        
+                        "help_locks": (
+                            "🔒 **قفل‌ها و محدودیت‌ها**\n\n"
+                            "**قفل‌های قابل تنظیم:**\n"
+                            "• `قفل فحش` / `بازکردن فحش` - مسدودسازی فحش\n"
+                            "• `قفل لینک` / `بازکردن لینک` - مسدودسازی لینک\n"
+                            "• `قفل فوروارد` / `بازکردن فوروارد` - مسدودسازی فوروارد\n"
+                            "• `قفل گیف` / `بازکردن گیف` - مسدودسازی گیف\n"
+                            "• `قفل گروه` / `بازکردن گروه` - قفل کامل گروه\n\n"
+                            "**مدیریت کلمات:**\n"
+                            "• `مسدود کلمه <متن>` - مسدود کردن کلمه خاص\n"
+                            "• `بازکردن کلمه <متن>` - آزاد کردن کلمه\n\n"
+                            "**قفل پست‌ها:**\n"
+                            "• `قفل پست` (ریپلای روی پست کانال) - غیرفعال کردن کامنت\n"
+                            "• `باز کردن پست` (ریپلای) - فعال کردن کامنت\n\n"
+                            "💡 **پنل مدیریت قفل:**\n"
+                            "• `پنل قفل` - نمایش پنل گرافیکی برای مدیریت قفل‌ها"
                         ),
-                        "help_settings": (
-                            "⚙️ تنظیمات گروه:\n"
-                            "- ریپلای روی پیام + `تنظیم خوشامد` : تغییر متن خوشامدگویی\n"
-                            "- جای گذاری ها در پیام خوشامد :\n"
-                            "1. `{name}` : نام کاربر جدید\n"
-                            "2. `{username}` : یوزرنیم کاربر جدید\n"
-                            "3. `{id}` : آیدی کاربر جدید\n"
-                            "4. `{chat}` : نام گروه\n"
-                            "5. `{members}` : تعداد اعضای گروه\n"
-                            "- ریپلای روی پیام + `تنظیم قوانین` : تغییر قوانین گروه\n"
-                            "- `قوانین` : نمایش قوانین ثبت‌شده گروه\n"
-                            "- `ریست` : بازنشانی تنظیمات گروه (غیر از فیلترها)\n"
-                            "- `سقف اخطار + عدد` : تنظیم سقف اخطار ها به عدد موردنظر\n"
-                            "- `بلاک بات @username` : بلاک کردن یک بات از گروه\n"
-                            "- `آن‌بلاک بات @username` : آن‌بلاک کردن یک بات از گروه\n"
-                            "- `بات های بلاک شده` : نمایش لیست بات‌های بلاک شده در گروه\n"
-                            "- `باادب شو\بی ادب شو` : تنظیم مدل رفتار و صحبت کردن ربات\n"
-                            "- `ریپلای روی پیام + تنظیم متن کامنت` : تنظیم متنی که ربات زیر پست های کانال کامنت میکند\n"
-                            "- `درخواست کمک`: ارسال لینک دعوت گروه به اونر ربات برای کمک گرفتن در صورت بروز مشکل اورژانسی"
+                        
+                        "help_filters": (
+                            "🎯 **فیلترها و پاسخ خودکار**\n\n"
+                            "**اضافه کردن فیلتر جدید:**\n"
+                            "1. روی پیامی که می‌خواید پاسخ بده **ریپلای** کنید\n"
+                            "2. بنویسید: `فیلتر <پاسخ مورد نظر>`\n"
+                            "3. مثال: ریپلای روی پیام `سلام` و نوشتن `فیلتر علیک سلام`\n\n"
+                            "**حذف فیلتر:**\n"
+                            "• ریپلای روی پیام فیلتر شده + `حذف فیلتر`\n"
+                            "• یا: `حذف فیلتر <کلمه کلیدی>`\n\n"
+                            "**مشاهده فیلترها:**\n"
+                            "• `فیلترها` - نمایش لیست تمام فیلترهای گروه\n\n"
+                            "💡 فیلترها دقیقاً برابر با کلمه کلیدی عمل می‌کنند (حساس به حروف بزرگ و کوچک نیست)"
                         ),
+                        
+                        "help_public": (
+                            "💬 **دستورات عمومی (قابل استفاده برای همه اعضا)**\n\n"
+                            "**فعال/غیرفعال کردن دستورات عمومی:**\n"
+                            "• `دستورات عمومی روشن` - فعال کردن\n"
+                            "• `دستورات عمومی خاموش` - غیرفعال کردن\n\n"
+                            "**دستورات قابل استفاده برای همه:**\n"
+                            "• `لینک` - دریافت لینک دعوت اختصاصی\n"
+                            "• `قوانین` - مشاهده قوانین گروه\n"
+                            "• `فیلترها` - مشاهده فیلترهای فعال\n"
+                            "• `اکو <متن>` - تکرار متن (ریپلای اختیاری)\n"
+                            "• `کمک یار` - منو و راهنما\n"
+                            "• `@admins` - منشن کردن همه ادمین‌ها\n"
+                            "• `گزارش` (ریپلای) - گزارش پیام به ادمین‌ها\n"
+                            "• `اطلاعات` (ریپلای) - مشاهده اطلاعات کاربر\n"
+                            "• `لقب` (ریپلای) - مشاهده لقب کاربر\n"
+                            "• `اصل` (ریپلای) - مشاهده اصل و نسب کاربر"
+                        ),
+                        
                         "help_invite": (
-                            "🔗 لینک دعوت:\n"
-                            "- `تنظیم حداکثر دعوت <عدد>` : محدود کردن تعداد اعضای هر لینک\n"
-                            "- `درخواست برای ورود` : روشن/خاموش کردن نیاز به تایید برای عضویت\n"
-                            "- `لینک` : ساخت لینک دعوت شخصی\n"
+                            "🔗 **لینک دعوت**\n\n"
+                            "**دستورات لینک:**\n"
+                            "• `لینک` - ساخت لینک دعوت جدید\n\n"
+                            "**تنظیمات پیشرفته لینک:**\n"
+                            "• `تنظیم حداکثر دعوت <عدد>` - محدودیت تعداد استفاده از لینک\n"
+                            "• `درخواست برای ورود` - فعال/غیرفعال کردن نیاز به تایید ادمین\n\n"
+                            "💡 **نکات:**\n"
+                            "- هر کاربر می‌تونه لینک اختصاصی خودش رو بسازه\n"
+                            "- لینک‌ها با نام کاربر سازنده ذخیره می‌شن\n"
+                            "- در حالت `درخواست برای ورود`،成员 باید توسط ادمین تایید بشن"
+                        ),
+                        
+                        "help_settings": (
+                            "⚙️ **تنظیمات گروه**\n\n"
+                            "**تنظیم متون:**\n"
+                            "• `تنظیم خوشامد` (ریپلای) - متن خوشامدگویی به اعضای جدید\n"
+                            "• `تنظیم قوانین` (ریپلای) - قوانین گروه\n"
+                            "• `تنظیم متن کامنت` (ریپلای) - متن زیر پست‌های کانال\n\n"
+                            "**متغیرهای قابل استفاده در متن خوشامد:**\n"
+                            "• `{name}` - نام کاربر جدید\n"
+                            "• `{username}` - یوزرنیم کاربر\n"
+                            "• `{id}` - آیدی عددی کاربر\n"
+                            "• `{chat}` - نام گروه\n"
+                            "• `{members}` - تعداد اعضای گروه\n\n"
+                            "**مدیریت بات‌ها:**\n"
+                            "• `بلاک بات @username` - مسدود کردن یک بات\n"
+                            "• `آن‌بلاک بات @username` - آزاد کردن بات\n"
+                            "• `بات های بلاک شده` - لیست بات‌های مسدود\n\n"
+                            "**سایر تنظیمات:**\n"
+                            "• `ریست` - بازنشانی تنظیمات (فیلترها باقی می‌مانند)\n"
+                            "• `باادب شو` / `بی ادب شو` - تغییر لحن پاسخ‌های بات\n"
+                            "• `درخواست کمک` - درخواست ورود اونر بات به گروه (مشکلات فوری)"
+                        ),
+                        
+                        "help_warnings": (
+                            "📝 **سیستم اخطار و گزارش**\n\n"
+                            "**اخطار:**\n"
+                            "• `اخطار` (ریپلای) - ثبت اخطار برای کاربر\n"
+                            "• `حذف اخطارها` (ریپلای) - پاک کردن تمام اخطارهای کاربر\n"
+                            "• `سقف اخطار <عدد>` - تعیین حداکثر اخطار (پیش‌فرض: 3)\n"
+                            "• `تعیین مجازات اخطار` - انتخاب مجازات پس از رسیدن به سقف\n\n"
+                            "**گزارش به ادمین:**\n"
+                            "• `گزارش` (ریپلای) - گزارش یک پیام به همه ادمین‌ها\n"
+                            "- ادمین‌ها می‌توانند گزارش را در پیوی خود بررسی کنند\n"
+                            "- گزارش‌ها شامل لینک مستقیم به پیام هستند\n\n"
+                            "💡 مجازات‌های اخطار شامل: کیک، بن، یا میوت می‌شود"
+                        ),
+                        
+                        "help_profile": (
+                            "🎭 **لقب و اصل (پروفایل کاربری)**\n\n"
+                            "**ثبت اطلاعات:**\n"
+                            "• `ثبت لقب <متن>` (ریپلای روی خود یا دیگران) - ثبت لقب\n"
+                            "• `ثبت اصل <متن>` (ریپلای) - ثبت اصل و نسب\n\n"
+                            "**مشاهده اطلاعات:**\n"
+                            "• `لقب` (ریپلای) - مشاهده لقب کاربر\n"
+                            "• `اصل` (ریپلای) - مشاهده اصل کاربر\n"
+                            "• `اطلاعات` (ریپلای) - اطلاعات کامل (آیدی، وضعیت، عکس)\n\n"
+                            "💡 کاربران می‌توانند لقب و اصل خود را ثبت کنند، ادمین‌ها می‌توانند برای دیگران ثبت کنند"
+                        ),
+                        
+                        "help_whisper": (
+                            "🕵️ **نجوا (ارسال پیام خصوصی)**\n\n"
+                            "**چگونه کار می‌کند:**\n"
+                            "از طریق **Inline Mode** می‌توانید به کاربران دیگر پیام خصوصی بفرستید بدون اینکه دیگران ببینند.\n\n"
+                            "**طریقه استفاده:**\n"
+                            "1. در باکس پیام، `@username_ربات` را تایپ کنید\n"
+                            "2. بنویسید: `<متن پیام> @username_مقصد`\n"
+                            "3. مثال: `@KomakYaarBot سلام چطوری؟ @Ali`\n"
+                            "4. روی نتیجه کلیک کنید و ارسال کنید\n\n"
+                            "**نکات مهم:**\n"
+                            "- فقط فرستنده و گیرنده می‌توانند پیام را بخوانند\n"
+                            "- پیام‌ها در دیتابیس رمزنگاری می‌شوند\n"
+                            "- نمی‌توانید به خودتان یا به ربات پیام بفرستید\n"
+                            "- در پیوی شخصی نمی‌توانید استفاده کنید"
+                        ),
+                        
+                        "help_faq": (
+                            "❓ **سوالات متداول**\n\n"
+                            "**۱. چرا بات پاسخ نمی‌دهد؟**\n"
+                            "• مطمئن شوید دستور `فعال شو` را فرستاده باشید\n"
+                            "• بررسی کنید بات ادمین گروه باشد\n"
+                            "• گروه ممکن است بن شده باشد\n\n"
+                            "**۲. چگونه تنظیمات را ریست کنم؟**\n"
+                            "• از دستور `ریست` استفاده کنید\n"
+                            "• فیلترها حذف نمی‌شوند، فقط تنظیمات ریست می‌شوند\n\n"
+                            "**۳. چرا لینک دعوت کار نمی‌کند؟**\n"
+                            "• بررسی کنید `تنظیم حداکثر دعوت` را تنظیم کرده‌اید\n"
+                            "• اگر `درخواست برای ورود` فعال است،成员 باید تایید شوند\n\n"
+                            "**۴. چگونه از شر پیام‌های اسپم خلاص شوم؟**\n"
+                            "• از قفل‌های لینک، فحش و فوروارد استفاده کنید\n"
+                            "• کلمات نامناسب را با `مسدود کلمه` اضافه کنید\n\n"
+                            "**۵. آیا بات اوپن سورس است؟**\n"
+                            "• بله! کد بات در گیت‌هاب موجود است:\n"
+                            "• https://github.com/Code-Wizaard/KomakYaar\n\n"
+                            "**۶. چطور باگ‌ها را گزارش کنم؟**\n"
+                            "• به گروه پشتیبانی بات بپیوندید:\n"
+                            "• لینک گروه در پیوی بات موجود است"
                         )
                     }
-
-                    if data in text_map:
+                    
+                    if data in help_contents:
                         bot.edit_message_text(
                             chat_id=call.message.chat.id,
                             message_id=call.message.message_id,
-                            text=text_map[data],
+                            text=help_contents[data],
                             parse_mode="Markdown",
-                            reply_markup=help_keyboard
+                            reply_markup=back_keyboard if data != "help_main" else help_keyboard
                         )
                     bot.answer_callback_query(call.id)
             except Exception as e:
-                print(f"Callback error: {e}")
+                error_text = f"callback_handler: {str(e)}\n{traceback.format_exc()}"
+                send_error_to_owner(error_text, OWNER_ID, bot, "CALLBACK_ERROR")
 
         @bot.message_handler(commands=['bangroup'])
         def ban_group(message: types.Message):
@@ -1009,35 +1148,44 @@ https://github.com/Code-Wizaard/KomakYaar
             if message.text == "/start":
                 bot.send_message(
                     message.chat.id,
-                    f"""سلام 👋
+                    f"""🌟 به **ربات کمک‌یار** خوش اومدی!
 
-به **ربات کمک‌یار** خوش اومدی 🤖
-این ربات بهت کمک می‌کنه گروهت رو راحت‌تر مدیریت کنی.
+من یه دستیار قدرتمند برای مدیریت گروه‌های تلگرامی هستم.
 
-📌 کاری که لازمه بکنی:
-    1. ربات رو به گروه اضافه کن.
-    2. بهش دسترسی های لازم رو بدی
-    3. دستور `فعال شو` رو بزن.
-    4. از این به بعد ربات همه چیز رو هندل می‌کنه.
+🚀 **برای شروع کافیه:** 
+1. منو به گروهت اضافه کن
+2. بهم دسترسی ادمین بده
+3. تو گروه دستور `فعال شو` رو بفرست
 
-❓ برای دیدن همه دستورات، کافیه `/help` رو بزنی.
+📊 **قابلیت‌های من:**
+• مدیریت کامل اعضا (اخطار، بن، میوت، کیک)
+• فیلترهای هوشمند و پاسخ خودکار
+• قفل‌های متنوع (لینک، فحش، فوروارد، گیف)
+• سیستم نجوا برای پیام‌های خصوصی
+• گزارش‌دهی و لاگ‌گیری
+• و ده‌ها قابلیت دیگر...
 
-برای باخبر شدن از قابلیت های جدید ربات میتونید در کانال کمک یار هم عضو شید :
-{BOT_CHANNEL}
+🔗 **لینک‌های مفید:**
+• کد منبع: [گیت‌هاب](https://github.com/Code-Wizaard/KomakYaar)
+• کانال آپدیت: {BOT_CHANNEL}
+• گروه پشتیبانی: {BOT_GROUP}
 
-همچنین، من یه ربات متن‌بازم پس میتونید کد منو ببینید و تغییر بدید و استفاده کنید در صورت نام بردن از کمک یار
-لینک پروژه :
-https://github.com/Code-Wizaard/KomakYaar
+📖 برای مشاهده راهنما، دکمه `/help` رو بزن.
 
-Made with ❤️ by Code-Wizaard and other contributors
-KomakYaar v{VERSION}
-            """,
+🎉 نسخه {VERSION}
+
+Made with ❤️ by Code-Wizaard""",
                     parse_mode="Markdown",
                     disable_web_page_preview=True,
                     reply_markup=start_keyboard
-            )
+                )
             elif message.text == "/help":
-                bot.send_message(message.from_user.id, HELP_TEXT, parse_mode="Markdown", reply_markup=help_keyboard)
+                bot.send_message(
+                    message.from_user.id, 
+                    HELP_TEXT, 
+                    parse_mode="Markdown", 
+                    reply_markup=help_keyboard
+                )
 
         @bot.message_handler(commands=['start'], func=lambda m: m.chat.type in ["group", "supergroup"])
         def group_starts(message: types.Message):
@@ -1087,397 +1235,406 @@ https://github.com/Code-Wizaard/KomakYaar
 
         @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation', 'video_note'])
         def handle_messages(message:types.Message):
-            chat_id = message.chat.id
-            user_id = message.from_user.id
-            text = (message.text or message.caption) or ""
-            message.text = text
-            is_comment = False
-            reply_to = message.reply_to_message
-            comment_channel = message.reply_to_message
-            file = open(SWEARS_PATH, "r")
-            swears = []
+            try:
+                chat_id = message.chat.id
+                user_id = message.from_user.id
+                text = (message.text or message.caption) or ""
+                message.text = text
+                is_comment = False
+                reply_to = message.reply_to_message
+                comment_channel = message.reply_to_message
+                file = open(SWEARS_PATH, "r")
+                swears = []
 
-            if self.db.is_group_blocked(chat_id):
-                return
-            
-            while reply_to:
-                if reply_to.is_automatic_forward:
-                    is_comment = True
-                    break
-                else:
-                    if reply_to.reply_to_message:
-                        reply_to = reply_to.reply_to_message
-                    else:
-                        reply_to = None
+                if self.db.is_group_blocked(chat_id):
+                    return
+                
+                while reply_to:
+                    if reply_to.is_automatic_forward:
+                        is_comment = True
                         break
+                    else:
+                        if reply_to.reply_to_message:
+                            reply_to = reply_to.reply_to_message
+                        else:
+                            reply_to = None
+                            break
 
-            if int(self.db.get_group_setting(chat_id, "GROUP_LOCK", 0)) == 1:
-                if not self.db.is_admin(chat_id, user_id):
-                    bot.delete_message(chat_id, message.message_id)
-
-            if int(self.db.get_group_setting(chat_id, "GIF_LOCK", 0)) == 1:
-                if message.content_type == "animation":
+                if int(self.db.get_group_setting(chat_id, "GROUP_LOCK", 0)) == 1:
                     if not self.db.is_admin(chat_id, user_id):
                         bot.delete_message(chat_id, message.message_id)
 
-            if message.via_bot:
-                bot_username = message.via_bot.username
-                blocked_bots = self.db.get_botBlocks(message.chat.id)
-                if bot_username in blocked_bots:
-                    bot.delete_message(message.chat.id, message.message_id)
+                if int(self.db.get_group_setting(chat_id, "GIF_LOCK", 0)) == 1:
+                    if message.content_type == "animation":
+                        if not self.db.is_admin(chat_id, user_id):
+                            bot.delete_message(chat_id, message.message_id)
+
+                if message.via_bot:
+                    bot_username = message.via_bot.username
+                    blocked_bots = self.db.get_botBlocks(message.chat.id)
+                    if bot_username in blocked_bots:
+                        bot.delete_message(message.chat.id, message.message_id)
+                        return
+                    
+                if message.is_automatic_forward:
+                    msg = self.db.get_comment_message(chat_id)
+                    bot.reply_to(message, msg)
+
+                if is_comment:
+                    post = self.db.post_lock_status(message.reply_to_message.chat.id, message.reply_to_message.id)
+                    if post:
+                        bot.delete_message(message.chat.id, message.message_id)
+                    
+                if self.db.get_group_setting(chat_id, "LINK_LOCK", 0):
+                    if re.search(r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", text):
+                        bot.delete_message(chat_id, message.message_id)
+                        return
+
+                toggle = self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
+                if not self.db.is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
                     return
-                
-            if message.is_automatic_forward:
-                msg = self.db.get_comment_message(chat_id)
-                bot.reply_to(message, msg)
-
-            if is_comment:
-                post = self.db.post_lock_status(message.reply_to_message.chat.id, message.reply_to_message.id)
-                if post:
-                    bot.delete_message(message.chat.id, message.message_id)
-                
-            if self.db.get_group_setting(chat_id, "LINK_LOCK", 0):
-                if re.search(r"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", text):
-                    bot.delete_message(chat_id, message.message_id)
-                    return
-
-            toggle = self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
-            if not self.db.is_admin(message.chat.id, message.from_user.id) and int(toggle) == 0:
-                return
-
-            for word in text.split(" "):
-                word = word.strip("‌")
-                blocked_word = self.db.blocked_words(chat_id)
-                if word in blocked_word:
-                    swears.append(word)
-
-            if int(self.db.get_group_setting(chat_id, "SWEAR_LOCK", 0)) == 1:
-                with open(SWEARS_PATH) as f:
-                    banned_words = {line.strip() for line in f}
 
                 for word in text.split(" "):
                     word = word.strip("‌")
-                    word = word.replace("‌", "")
-                    if word in banned_words:
+                    blocked_word = self.db.blocked_words(chat_id)
+                    if word in blocked_word:
                         swears.append(word)
 
-            if not len(swears) == 0:
+                if int(self.db.get_group_setting(chat_id, "SWEAR_LOCK", 0)) == 1:
+                    with open(SWEARS_PATH) as f:
+                        banned_words = {line.strip() for line in f}
 
-                for swear in swears:
-                    pattern = re.compile(re.escape(swear), re.IGNORECASE)
-                    text = pattern.sub(r"\*" * len(swear), text)
+                    for word in text.split(" "):
+                        word = word.strip("‌")
+                        word = word.replace("‌", "")
+                        if word in banned_words:
+                            swears.append(word)
 
-                if self.db.is_admin(chat_id, message.from_user.id):
+                if not len(swears) == 0:
+
+                    for swear in swears:
+                        pattern = re.compile(re.escape(swear), re.IGNORECASE)
+                        text = pattern.sub(r"\*" * len(swear), text)
+
+                    if self.db.is_admin(chat_id, message.from_user.id):
+                        return
+                    markup = types.InlineKeyboardMarkup()
+                    check_button = types.InlineKeyboardButton("نمایش کلمه", callback_data=f"swear:{repr(swears)}")
+                    markup.add(check_button)
+                    bot.reply_to(comment_channel if is_comment else message, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم \n\n متن سانسور شده :\n >> {text}", parse_mode="Markdown", reply_markup=markup)
+                    bot.delete_message(chat_id, message.message_id)
+
+                if text.startswith("db:"):
+                    bot.reply_to(message, "دوست عزیز، شما اونر نیستید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گوه نخور بابا این گوزا به تو نیومده")
+
+                if text == "کمک یار" or text == "کمک‌یار":
+                    bot.reply_to(message, f"{message.from_user.first_name}")
+
+                if not self.db.is_group_active(chat_id):
                     return
-                markup = types.InlineKeyboardMarkup()
-                check_button = types.InlineKeyboardButton("نمایش کلمه", callback_data=f"swear:{repr(swears)}")
-                markup.add(check_button)
-                bot.reply_to(comment_channel if is_comment else message, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم \n\n متن سانسور شده :\n >> {text}", parse_mode="Markdown", reply_markup=markup)
-                bot.delete_message(chat_id, message.message_id)
 
-            if text.startswith("db:"):
-                bot.reply_to(message, "دوست عزیز، شما اونر نیستید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گوه نخور بابا این گوزا به تو نیومده")
+                tags = self.db.get_tags(chat_id)
+                for k, r in tags.items():
+                    if text == k:
+                        bot.reply_to(message, r)
+                        break
 
-            if text == "کمک یار" or text == "کمک‌یار":
-                bot.reply_to(message, f"{message.from_user.first_name}")
-
-            if not self.db.is_group_active(chat_id):
-                return
-
-            tags = self.db.get_tags(chat_id)
-            for k, r in tags.items():
-                if text == k:
-                    bot.reply_to(message, r)
-                    break
-
-            if text.startswith("سقف اخطار"):
-                if not self.db.is_admin(chat_id, user_id):
-                    bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "همون سقف تو کونت")
-                    return
-                words = text.split(" ")
-                words.remove("سقف")
-                words.remove("اخطار")
-                if words[0].isdigit():
-                    digit = convert_digit(words[0])
-                    self.db.set_warn_maximum(chat_id, digit)
-                    bot.reply_to(message, "سقف اخطارها با موفقیت تنظیم شد")
-                else:
-                    bot.reply_to(message, f"{words[0]} خودتی")
-
-            if text.startswith("حذف فیلتر"):
-                if not self.db.is_admin(chat_id, user_id):
-                    bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف")
-                    return
-                # اگر ریپلای شده روی پیام کلیدواژه
-                if message.reply_to_message:
-                    keyword = message.reply_to_message.text.strip()
-                else:
-                    # جدا کردن کلیدواژه از متن: حذف فیلتر <کلیدواژه>
-                    keyword = text[len("حذف فیلتر"):].strip()
-
-                if keyword:
-                    self.db.del_tag(chat_id, keyword)
-                    bot.reply_to(message, f"❌ فیلتر '{keyword}' حذف شد")
-                else:
-                    bot.reply_to(message, "⚠️ فرمت درست: حذف فیلتر روی ریپلای یا با نوشتن کلیدواژه")
-                return
-
-            if (message.text.startswith("حذف") and text != "حذف اخطارها"):
-                if not self.db.is_admin(chat_id, user_id):
-                    bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "امیدوارم از زندگی حذف شی")
-                    return
-                try:
-                    n = int(message.text.replace("حذف", "").strip())
-                except:
-                    n = 1
-
-                chat_id = message.chat.id
-                start_id = message.message_id   # id دستور "حذف ۵"
-                err = 0
-                for i in range(n+1):  # +1 یعنی خود دستور هم پاک بشه
-                    try:
-                        bot.delete_message(chat_id, start_id - i)
-                    except:
-                        err += 1
-                msg = bot.send_message(chat_id, f"{n-err} با موفقیت حذف شد 🗑️")
-                time.sleep(4)
-                bot.delete_message(msg.chat.id, msg.message_id)
-
-            if message.reply_to_message:
-                target_id = message.reply_to_message.from_user.id
-
-                # ADD TAG (فیلتر)
-                if text.startswith("فیلتر") and self.db.is_admin(chat_id, user_id):
-                    keyword = message.reply_to_message.text.strip()
-                    response = text[len("فیلتر"):].strip()
-                    if keyword and response:
-                        self.db.add_tag(chat_id, keyword, response)
-                        bot.reply_to(message, f"✅ فیلتر اضافه شد!\nکلیدواژه: {keyword}\nپاسخ: {response}")
+                if text.startswith("سقف اخطار"):
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "همون سقف تو کونت")
+                        return
+                    words = text.split(" ")
+                    words.remove("سقف")
+                    words.remove("اخطار")
+                    if words[0].isdigit():
+                        digit = convert_digit(words[0])
+                        self.db.set_warn_maximum(chat_id, digit)
+                        bot.reply_to(message, "سقف اخطارها با موفقیت تنظیم شد")
                     else:
-                        bot.reply_to(message, "⚠️ فرمت درست: ریپلای روی پیام و نوشتن: فیلتر پاسخ")
+                        bot.reply_to(message, f"{words[0]} خودتی")
+
+                if text.startswith("حذف فیلتر"):
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف")
+                        return
+                    # اگر ریپلای شده روی پیام کلیدواژه
+                    if message.reply_to_message:
+                        keyword = message.reply_to_message.text.strip()
+                    else:
+                        # جدا کردن کلیدواژه از متن: حذف فیلتر <کلیدواژه>
+                        keyword = text[len("حذف فیلتر"):].strip()
+
+                    if keyword:
+                        self.db.del_tag(chat_id, keyword)
+                        bot.reply_to(message, f"❌ فیلتر '{keyword}' حذف شد")
+                    else:
+                        bot.reply_to(message, "⚠️ فرمت درست: حذف فیلتر روی ریپلای یا با نوشتن کلیدواژه")
                     return
 
-                if text == "حذف" and self.db.is_admin(chat_id, user_id):
-                    bot.delete_message(chat_id, message.reply_to_message.message_id)
-                    msg = bot.reply_to(message, "پیام پاک شد 🗑️")
+                if (message.text.startswith("حذف") and text != "حذف اخطارها"):
+                    if not self.db.is_admin(chat_id, user_id):
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "امیدوارم از زندگی حذف شی")
+                        return
+                    try:
+                        n = int(message.text.replace("حذف", "").strip())
+                    except:
+                        n = 1
+
+                    chat_id = message.chat.id
+                    start_id = message.message_id   # id دستور "حذف ۵"
+                    err = 0
+                    for i in range(n+1):  # +1 یعنی خود دستور هم پاک بشه
+                        try:
+                            bot.delete_message(chat_id, start_id - i)
+                        except:
+                            err += 1
+                    msg = bot.send_message(chat_id, f"{n-err} با موفقیت حذف شد 🗑️")
                     time.sleep(4)
                     bot.delete_message(msg.chat.id, msg.message_id)
 
-                if text == "گزارش":
-                    admins = bot.get_chat_administrators(chat_id)
-                    msg = bot.reply_to(message, "گزارش با موفقیت ثبت و به ادمین ها اطلاع رسانی شد، به زودی گزارش بررسی میشود")
-                    id = self.db.file_report(chat_id, user_id, target_id, msg.message_id)
-                    target = bot.get_chat(target_id)
-                    markup = types.InlineKeyboardMarkup()
-                    check_button = types.InlineKeyboardButton("بررسی شد", callback_data=f"check:{id}")
-                    message_btn = types.InlineKeyboardButton("رفتن به پیام", url=f"https://t.me/c/{str(chat_id)[4:]}/{message.reply_to_message.message_id}")
+                if message.reply_to_message:
+                    target_id = message.reply_to_message.from_user.id
 
-                    markup.add(check_button)
-                    markup.add(message_btn)
-                    for admin in admins:
-                        if not admin.user.is_bot and admin.user.id != bot.get_me().id:
-                            try:
-                                bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر [{message.from_user.first_name}](tg://user?id={user_id}) در گروه با ایدی {chat_id}\n فرد گزارش شده : [{target.first_name}](tg://user?id={target_id})\n متن پیام ارسالی :\n > {message.reply_to_message.text}", reply_markup=markup, parse_mode="Markdown")
-                            except:
-                                pass
-
-                if text.startswith("ثبت لقب"):
-                    if not (self.db.is_admin(chat_id, user_id) or target_id == user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "بدو بینم")
-                        return
-                    alias = text[len("ثبت لقب"):].strip()
-                    self.db.set_alias(chat_id, target_id, alias)
-                    bot.reply_to(message, f"لقب {alias} با موفقیت برای این کاربر ثبت شد")
-
-                if text == "لقب":
-                    alias = self.db.get_alias(chat_id, target_id).strip()
-                    bot.reply_to(message, f"لقب ثبت شده برای این کاربر :\n {alias}")
-
-                if text.startswith("ثبت اصل"):
-                    if not (self.db.is_admin(chat_id, user_id) or target_id == user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کیرم تو اصلت")
-                        return
-                    asl = text[len("ثبت اصل"):].strip()
-                    self.db.set_asl(chat_id, target_id, asl)
-                    bot.reply_to(message, f"اصل {asl} با موفقیت برای این کاربر ثبت شد")
-
-                if text == "اصل":
-                    asl = self.db.get_asl(chat_id, target_id).strip()
-                    bot.reply_to(message, f"اصل ثبت شده برای این کاربر :\n {asl}")
-
-                if text == "تنظیم خوشامد" and self.db.is_admin(chat_id, user_id):
-                    self.db.set_group_welcome(chat_id, message.reply_to_message.text)
-                    bot.reply_to(message, "متن خوشامد گویی ربات با موفقیت تنظیم شد")
-
-                if text == "تنظیم قوانین" and self.db.is_admin(chat_id, user_id):
-                    self.db.set_group_rules(chat_id, message.reply_to_message.text)
-                    bot.reply_to(message, "قوانین گروه با موفقیت تنظیم شد")
-
-                if text == "تنظیم متن کامنت" and self.db.is_admin(chat_id, user_id):
-                    if message.reply_to_message:
-                        self.db.set_comment_message(chat_id, message.reply_to_message.text)
-                        bot.reply_to(message, "متن کامنت زیر پست ها تغییر پیدا کرد")
-                    else:
-                        bot.reply_to(message, "خب دقیقا متن رو به چی تغییر باید بدم :\\")
-
-                if text == "اطلاعات":
-                    try:
-                        # گرفتن اطلاعات پایه کاربر
-                        user = bot.get_chat_member(chat_id, target_id).user
-                        user_id = user.id
-                        first_name = user.first_name or ""
-                        last_name = user.last_name or ""
-                        username = f"@{user.username}" if user.username else "❌ ندارد"
-                        is_bot = "🤖 بله" if user.is_bot else "👤 خیر"
-
-                        # وضعیت کاربر توی گروه
-                        member = bot.get_chat_member(chat_id, target_id)
-                        status_map = {
-                            "creator": "👑 مالک گروه",
-                            "administrator": "🛡️ ادمین",
-                            "member": "👤 عضو عادی",
-                            "restricted": "🚫 محدودشده",
-                            "left": "⬅️ ترک کرده",
-                            "kicked": "⛔ بن شده"
-                        }
-                        status = status_map.get(member.status, member.status)
-
-                        caption = (
-                            f"🆔 آیدی عددی: <code>{user_id}</code>\n"
-                            f"👤 اسم: {first_name} {last_name}\n"
-                            f"🔗 یوزرنیم: {username}\n"
-                            f"🤖 بات هست؟ {is_bot}\n"
-                            f"📌 وضعیت در گروه: {status}\n"
-                        )
-
-                        # عکس پروفایل
-                        photos = bot.get_user_profile_photos(user_id, limit=1)
-                        if photos.total_count > 0:
-                            file_id = photos.photos[0][0].file_id
-                            bot.send_photo(chat_id, file_id, caption, parse_mode="HTML")
+                    # ADD TAG (فیلتر)
+                    if text.startswith("فیلتر") and self.db.is_admin(chat_id, user_id):
+                        keyword = message.reply_to_message.text.strip()
+                        response = text[len("فیلتر"):].strip()
+                        if keyword and response:
+                            self.db.add_tag(chat_id, keyword, response)
+                            bot.reply_to(message, f"✅ فیلتر اضافه شد!\nکلیدواژه: {keyword}\nپاسخ: {response}")
                         else:
-                            bot.send_message(chat_id, caption, parse_mode="HTML")
-
-                    except Exception as e:
-                        bot.send_message(chat_id, f"❌ خطا در گرفتن اطلاعات کاربر:\n<code>{e}</code>", parse_mode="HTML")
-
-                # MUTE
-                if (text.startswith("خفه") or text.startswith("سکوت")):
-                    if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه چی بگم من به تو")
+                            bot.reply_to(message, "⚠️ فرمت درست: ریپلای روی پیام و نوشتن: فیلتر پاسخ")
                         return
-                    if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "حاجی بی شوخی خیلی کصخلی طرف ادمینه من اینو چیکارش کنم")
-                        return
-                    parts = text.split()
-                    if len(parts) >= 2 and parts[1].isdigit():
-                        mins = int(parts[1])
-                        if mins == "شو":
-                            bot.restrict_chat_member(chat_id, target_id, can_send_messages=False)
-                            self.db.add_punishment(chat_id, target_id, "mute", "0")
-                            bot.reply_to(message, f"🔇 کاربر سکوت داده شد.")
+
+                    if text == "حذف" and self.db.is_admin(chat_id, user_id):
+                        bot.delete_message(chat_id, message.reply_to_message.message_id)
+                        msg = bot.reply_to(message, "پیام پاک شد 🗑️")
+                        time.sleep(4)
+                        bot.delete_message(msg.chat.id, msg.message_id)
+
+                    if text == "گزارش":
+                        admins = bot.get_chat_administrators(chat_id)
+                        msg = bot.reply_to(message, "گزارش با موفقیت ثبت و به ادمین ها اطلاع رسانی شد، به زودی گزارش بررسی میشود")
+                        id = self.db.file_report(chat_id, user_id, target_id, msg.message_id)
+                        target = bot.get_chat(target_id)
+                        markup = types.InlineKeyboardMarkup()
+                        check_button = types.InlineKeyboardButton("بررسی شد", callback_data=f"check:{id}")
+                        message_btn = types.InlineKeyboardButton("رفتن به پیام", url=f"https://t.me/c/{str(chat_id)[4:]}/{message.reply_to_message.message_id}")
+
+                        markup.add(check_button)
+                        markup.add(message_btn)
+                        for admin in admins:
+                            if not admin.user.is_bot and admin.user.id != bot.get_me().id:
+                                try:
+                                    bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر [{message.from_user.first_name}](tg://user?id={user_id}) در گروه با ایدی {chat_id}\n فرد گزارش شده : [{target.first_name}](tg://user?id={target_id})\n متن پیام ارسالی :\n > {message.reply_to_message.text}", reply_markup=markup, parse_mode="Markdown")
+                                except:
+                                    pass
+
+                    if text.startswith("ثبت لقب"):
+                        if not (self.db.is_admin(chat_id, user_id) or target_id == user_id):
+                            bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "بدو بینم")
+                            return
+                        alias = text[len("ثبت لقب"):].strip()
+                        self.db.set_alias(chat_id, target_id, alias)
+                        bot.reply_to(message, f"لقب {alias} با موفقیت برای این کاربر ثبت شد")
+
+                    if text == "لقب":
+                        alias = self.db.get_alias(chat_id, target_id).strip()
+                        bot.reply_to(message, f"لقب ثبت شده برای این کاربر :\n {alias}")
+
+                    if text.startswith("ثبت اصل"):
+                        if not (self.db.is_admin(chat_id, user_id) or target_id == user_id):
+                            bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کیرم تو اصلت")
+                            return
+                        asl = text[len("ثبت اصل"):].strip()
+                        self.db.set_asl(chat_id, target_id, asl)
+                        bot.reply_to(message, f"اصل {asl} با موفقیت برای این کاربر ثبت شد")
+
+                    if text == "اصل":
+                        asl = self.db.get_asl(chat_id, target_id).strip()
+                        bot.reply_to(message, f"اصل ثبت شده برای این کاربر :\n {asl}")
+
+                    if text == "تنظیم خوشامد" and self.db.is_admin(chat_id, user_id):
+                        self.db.set_group_welcome(chat_id, message.reply_to_message.text)
+                        bot.reply_to(message, "متن خوشامد گویی ربات با موفقیت تنظیم شد")
+
+                    if text == "تنظیم قوانین" and self.db.is_admin(chat_id, user_id):
+                        self.db.set_group_rules(chat_id, message.reply_to_message.text)
+                        bot.reply_to(message, "قوانین گروه با موفقیت تنظیم شد")
+
+                    if text == "تنظیم متن کامنت" and self.db.is_admin(chat_id, user_id):
+                        if message.reply_to_message:
+                            self.db.set_comment_message(chat_id, message.reply_to_message.text)
+                            bot.reply_to(message, "متن کامنت زیر پست ها تغییر پیدا کرد")
                         else:
-                            bot.restrict_chat_member(chat_id, target_id,
-                                                until_date=int(time.time()+mins*60),
-                                                can_send_messages=False)
-                            self.db.add_punishment(chat_id, target_id, "mute", int(time.time()+mins*60))
-                            bot.reply_to(message, f"🔇 کاربر سکوت داده شد برای {mins} دقیقه.")
+                            bot.reply_to(message, "خب دقیقا متن رو به چی تغییر باید بدم :\\")
 
-                elif (text.startswith("اخطار")):
-                    if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برنامه نویس : خداوکیلی مغزم گوزید دیگه نمیدونم چی بنویسم")
-                        return
-                    if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه کصمغز چرا باید ادمینو اخطار بدم")
-                        return
-                    self.db.warn_user(chat_id, target_id)
-                    warns = self.db.get_user_warnings(chat_id, target_id)
-                    warn_max = self.db.get_group_setting(chat_id, "WARN_MAXIMUM", 3)
-                    bot.reply_to(message, f"کاربر با موفقیت اخطار داده شد! ⚠️\n اخطار های کاربر : {warns}/{warn_max}")
-                    if int(warns) >= int(warn_max):
-                        punish = self.db.get_group_setting(chat_id, "WARN_PUNISHMENT", "kick")
-                        if punish == "kick":
-                            bot.ban_chat_member(chat_id, target_id)
-                            bot.unban_chat_member(chat_id, target_id)
-                            self.db.add_punishment(chat_id, target_id, "kick")
-                            bot.reply_to(message, "👢 کاربر کیک شد!")
-                        elif punish == "ban":
-                            bot.ban_chat_member(chat_id, target_id)
-                            self.db.add_punishment(chat_id, target_id, "ban")
-                            bot.reply_to(message, "⛔ کاربر بن شد!")
-                        elif punish == "mute":
-                            bot.restrict_chat_member(chat_id, target_id, can_send_messages=False)
-                            bot.reply_to(message, "کاربر میوت شد! 🤐")
+                    if text == "اطلاعات":
+                        try:
+                            # گرفتن اطلاعات پایه کاربر
+                            user = bot.get_chat_member(chat_id, target_id).user
+                            user_id = user.id
+                            first_name = user.first_name or ""
+                            last_name = user.last_name or ""
+                            username = f"@{user.username}" if user.username else "❌ ندارد"
+                            is_bot = "🤖 بله" if user.is_bot else "👤 خیر"
+
+                            # وضعیت کاربر توی گروه
+                            member = bot.get_chat_member(chat_id, target_id)
+                            status_map = {
+                                "creator": "👑 مالک گروه",
+                                "administrator": "🛡️ ادمین",
+                                "member": "👤 عضو عادی",
+                                "restricted": "🚫 محدودشده",
+                                "left": "⬅️ ترک کرده",
+                                "kicked": "⛔ بن شده"
+                            }
+                            status = status_map.get(member.status, member.status)
+
+                            caption = (
+                                f"🆔 آیدی عددی: <code>{user_id}</code>\n"
+                                f"👤 اسم: {first_name} {last_name}\n"
+                                f"🔗 یوزرنیم: {username}\n"
+                                f"🤖 بات هست؟ {is_bot}\n"
+                                f"📌 وضعیت در گروه: {status}\n"
+                            )
+
+                            # عکس پروفایل
+                            photos = bot.get_user_profile_photos(user_id, limit=1)
+                            if photos.total_count > 0:
+                                file_id = photos.photos[0][0].file_id
+                                bot.send_photo(chat_id, file_id, caption, parse_mode="HTML")
+                            else:
+                                bot.send_message(chat_id, caption, parse_mode="HTML")
+
+                        except Exception as e:
+                            bot.send_message(chat_id, f"❌ خطا در گرفتن اطلاعات کاربر:\n<code>{e}</code>", parse_mode="HTML")
+
+                    # MUTE
+                    if (text.startswith("خفه") or text.startswith("سکوت")):
+                        if not self.db.is_admin(chat_id, user_id):
+                            bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه چی بگم من به تو")
+                            return
+                        if self.db.is_admin(chat_id, target_id):
+                            bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "حاجی بی شوخی خیلی کصخلی طرف ادمینه من اینو چیکارش کنم")
+                            return
+                        parts = text.split()
+                        if len(parts) >= 2 and parts[1].isdigit():
+                            mins = int(parts[1])
+                            if mins == "شو":
+                                bot.restrict_chat_member(chat_id, target_id, can_send_messages=False)
+                                self.db.add_punishment(chat_id, target_id, "mute", "0")
+                                bot.reply_to(message, f"🔇 کاربر سکوت داده شد.")
+                            else:
+                                bot.restrict_chat_member(chat_id, target_id,
+                                                    until_date=int(time.time()+mins*60),
+                                                    can_send_messages=False)
+                                self.db.add_punishment(chat_id, target_id, "mute", int(time.time()+mins*60))
+                                bot.reply_to(message, f"🔇 کاربر سکوت داده شد برای {mins} دقیقه.")
+
+                    elif (text.startswith("اخطار")):
+                        if not self.db.is_admin(chat_id, user_id):
+                            bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برنامه نویس : خداوکیلی مغزم گوزید دیگه نمیدونم چی بنویسم")
+                            return
+                        if self.db.is_admin(chat_id, target_id):
+                            bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه کصمغز چرا باید ادمینو اخطار بدم")
+                            return
+                        self.db.warn_user(chat_id, target_id)
+                        warns = self.db.get_user_warnings(chat_id, target_id)
+                        warn_max = self.db.get_group_setting(chat_id, "WARN_MAXIMUM", 3)
+                        bot.reply_to(message, f"کاربر با موفقیت اخطار داده شد! ⚠️\n اخطار های کاربر : {warns}/{warn_max}")
+                        if int(warns) >= int(warn_max):
+                            punish = self.db.get_group_setting(chat_id, "WARN_PUNISHMENT", "kick")
+                            if punish == "kick":
+                                bot.ban_chat_member(chat_id, target_id)
+                                bot.unban_chat_member(chat_id, target_id)
+                                self.db.add_punishment(chat_id, target_id, "kick")
+                                bot.reply_to(message, "👢 کاربر کیک شد!")
+                            elif punish == "ban":
+                                bot.ban_chat_member(chat_id, target_id)
+                                self.db.add_punishment(chat_id, target_id, "ban")
+                                bot.reply_to(message, "⛔ کاربر بن شد!")
+                            elif punish == "mute":
+                                bot.restrict_chat_member(chat_id, target_id, can_send_messages=False)
+                                bot.reply_to(message, "کاربر میوت شد! 🤐")
+                            self.db.remove_all_warns(chat_id, target_id)
+
+                    elif (text == "حذف اخطارها") and self.db.is_admin(chat_id, user_id):
+                        if self.db.is_admin(chat_id, target_id):
+                            bot.reply_to("فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "چیزی میزنی؟ اصلا مگه میتونم اخطار بدم که الان میگی حذف اخطار")
+                            return
                         self.db.remove_all_warns(chat_id, target_id)
-
-                elif (text == "حذف اخطارها") and self.db.is_admin(chat_id, user_id):
-                    if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to("فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "چیزی میزنی؟ اصلا مگه میتونم اخطار بدم که الان میگی حذف اخطار")
-                        return
-                    self.db.remove_all_warns(chat_id, target_id)
-                    bot.reply_to(message, "شتر دیدی ندیدی! ✅")
+                        bot.reply_to(message, "شتر دیدی ندیدی! ✅")
 
 
 
-                # KICK
-                elif (text == "ریم" or text == "کیک" or text == "سیک"):
-                    if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برو تا سیکتو نزدم")
-                        return
-                    if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باشه داداش دوبار الان برات ادمینو کیک میکنم")
-                        return
-                    bot.ban_chat_member(chat_id, target_id)
-                    bot.unban_chat_member(chat_id, target_id)
-                    self.db.add_punishment(chat_id, target_id, "kick")
-                    bot.reply_to(message, "👢 کاربر کیک شد!")
+                    # KICK
+                    elif (text == "ریم" or text == "کیک" or text == "سیک"):
+                        if not self.db.is_admin(chat_id, user_id):
+                            bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برو تا سیکتو نزدم")
+                            return
+                        if self.db.is_admin(chat_id, target_id):
+                            bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باشه داداش دوبار الان برات ادمینو کیک میکنم")
+                            return
+                        bot.ban_chat_member(chat_id, target_id)
+                        bot.unban_chat_member(chat_id, target_id)
+                        self.db.add_punishment(chat_id, target_id, "kick")
+                        bot.reply_to(message, "👢 کاربر کیک شد!")
 
-                # BAN
-                elif (text == "بن" or text =="سیکتیر"):
-                    if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کیر شدی بدبخت ادمین نیستی")
-                        return
-                    if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "پاول دوروفم نمیتونه ادمین بن کنه تو دیگه چه انتظاری داری")
-                        return
-                    bot.ban_chat_member(chat_id, target_id)
-                    self.db.add_punishment(chat_id, target_id, "ban")
-                    bot.reply_to(message, "⛔ کاربر بن شد!")
+                    # BAN
+                    elif (text == "بن" or text =="سیکتیر"):
+                        if not self.db.is_admin(chat_id, user_id):
+                            bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کیر شدی بدبخت ادمین نیستی")
+                            return
+                        if self.db.is_admin(chat_id, target_id):
+                            bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "پاول دوروفم نمیتونه ادمین بن کنه تو دیگه چه انتظاری داری")
+                            return
+                        bot.ban_chat_member(chat_id, target_id)
+                        self.db.add_punishment(chat_id, target_id, "ban")
+                        bot.reply_to(message, "⛔ کاربر بن شد!")
 
-                elif (text == "مخفی کاری" or text == "بن+" or text.startswith("سیک مخفی")):
-                    if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ببین بچه جون تا نبردمت زیرزمین خونمون برو گمشو")
-                        return
-                    if self.db.is_admin(chat_id, target_id):
-                        bot.reply_to(message, "دوست عزیز، نمیتوانم ادمین هارا بن یا کیک کنم" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "سیشتیر بابا همتون همینو میگید")
-                        return
-                    bot.delete_message(chat_id, message.message_id)
-                    bot.ban_chat_member(chat_id, target_id)
+                    elif (text == "مخفی کاری" or text == "بن+" or text.startswith("سیک مخفی")):
+                        if not self.db.is_admin(chat_id, user_id):
+                            bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ببین بچه جون تا نبردمت زیرزمین خونمون برو گمشو")
+                            return
+                        if self.db.is_admin(chat_id, target_id):
+                            bot.reply_to(message, "دوست عزیز، نمیتوانم ادمین هارا بن یا کیک کنم" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "سیشتیر بابا همتون همینو میگید")
+                            return
+                        bot.delete_message(chat_id, message.message_id)
+                        bot.ban_chat_member(chat_id, target_id)
 
-                # UNBAN
-                elif (text == "آن‌بن" or text == "آن بن" or text == "ان بن") and self.db.is_admin(chat_id, user_id):
-                    bot.unban_chat_member(chat_id, target_id)
-                    self.db.remove_punishment(chat_id, target_id, "ban")
-                    bot.reply_to(message, "✅ کاربر آن‌بن شد!")
+                    # UNBAN
+                    elif (text == "آن‌بن" or text == "آن بن" or text == "ان بن") and self.db.is_admin(chat_id, user_id):
+                        bot.unban_chat_member(chat_id, target_id)
+                        self.db.remove_punishment(chat_id, target_id, "ban")
+                        bot.reply_to(message, "✅ کاربر آن‌بن شد!")
 
-                # UNMUTE
-                elif (text == "آن‌میوت" or text == "آن میوت" or text == "ان میوت") and self.db.is_admin(chat_id, user_id):
-                    bot.restrict_chat_member(chat_id, target_id,
-                                            can_send_messages=True)
-                    self.db.remove_punishment(chat_id, target_id, "mute")
-                    bot.reply_to(message, "✅ کاربر آن‌میوت شد!")
+                    # UNMUTE
+                    elif (text == "آن‌میوت" or text == "آن میوت" or text == "ان میوت") and self.db.is_admin(chat_id, user_id):
+                        bot.restrict_chat_member(chat_id, target_id,
+                                                can_send_messages=True)
+                        self.db.remove_punishment(chat_id, target_id, "mute")
+                        bot.reply_to(message, "✅ کاربر آن‌میوت شد!")
 
 
-            if text == "@admins":
-                admins = bot.get_chat_administrators(chat_id)
-                mentions = [f"[{a.user.first_name}](tg://user?id={a.user.id})" for a in admins]
-                bot.send_message(chat_id, " ".join(mentions), parse_mode="Markdown")
-            
-            file.close()
+                if text == "@admins":
+                    admins = bot.get_chat_administrators(chat_id)
+                    mentions = [f"[{a.user.first_name}](tg://user?id={a.user.id})" for a in admins]
+                    bot.send_message(chat_id, " ".join(mentions), parse_mode="Markdown")
+                
+                file.close()
+            except Exception as e:
+                error_text = f"handle_messages: {str(e)}\n{traceback.format_exc()}"
+                send_error_to_owner(error_text, OWNER_ID, bot, "MAIN_ERROR")
 
     def run(self):
         print(f"{me.username} Group Helper running...")
-        bot.polling(non_stop=True, skip_pending=True)
+        try:
+            bot.polling(non_stop=True, skip_pending=True)
+        except Exception as e:
+            error_text = f"Polling crashed: {str(e)}\n{traceback.format_exc()}"
+            send_error_to_owner(error_text, OWNER_ID, bot, "POLLING_CRASH")
+            print(f"Error: {e}")
     
     def stop(self):
         print(f"Shutting down {me.username}...")
