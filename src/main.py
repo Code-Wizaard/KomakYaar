@@ -1355,7 +1355,7 @@ https://github.com/Code-Wizaard/KomakYaar
                 # MUTE
                 if (text.startswith("خفه") or text.startswith("سکوت")):
                     if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه کصخل اگر من میتونستم ادمینو سکوت بدم اول از همه خودتو میوت میکردم")
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه چی بگم من به تو")
                         return
                     if self.db.is_admin(chat_id, target_id):
                         bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "حاجی بی شوخی خیلی کصخلی طرف ادمینه من اینو چیکارش کنم")
@@ -1413,7 +1413,7 @@ https://github.com/Code-Wizaard/KomakYaar
                 # KICK
                 elif (text == "ریم" or text == "کیک" or text == "سیک"):
                     if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "فان فکت : ادمین ها نمیتونن همدیگه رو کیک کنن")
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "برو تا سیکتو نزدم")
                         return
                     if self.db.is_admin(chat_id, target_id):
                         bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باشه داداش دوبار الان برات ادمینو کیک میکنم")
@@ -1426,7 +1426,7 @@ https://github.com/Code-Wizaard/KomakYaar
                 # BAN
                 elif (text == "بن" or text =="سیکتیر"):
                     if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "یعنی کیر تو مغزت که نمیدونی این ادمینه")
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کیر شدی بدبخت ادمین نیستی")
                         return
                     if self.db.is_admin(chat_id, target_id):
                         bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "پاول دوروفم نمیتونه ادمین بن کنه تو دیگه چه انتظاری داری")
@@ -1437,7 +1437,7 @@ https://github.com/Code-Wizaard/KomakYaar
 
                 elif (text == "مخفی کاری" or text == "بن+" or text.startswith("سیک مخفی")):
                     if not self.db.is_admin(chat_id, user_id):
-                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "بچگیات هیتمن زیاد دیدی فکر کردی همه رو میشه بن کرد؟")
+                        bot.reply_to(message, "دوست عزیز، شما دسترسی ادمین ندارید" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ببین بچه جون تا نبردمت زیرزمین خونمون برو گمشو")
                         return
                     if self.db.is_admin(chat_id, target_id):
                         bot.reply_to(message, "دوست عزیز، نمیتوانم ادمین هارا بن یا کیک کنم" if int(self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "سیشتیر بابا همتون همینو میگید")
