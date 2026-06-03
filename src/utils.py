@@ -7,6 +7,8 @@ DB_PATH = os.getenv("DB_PATH", "groups.db")
 SWEARS_PATH = os.getenv("SWEARS_PATH", "swears.txt")
 OWNER_ID = int(os.getenv("OWNER_ID"))
 VERSION = "1.4.4"
+BOT_CHANNEL = "@KomakYaaaR"
+BOT_GROUP = "@KomakYaarGap"
 
 HELP_TEXT = (
     "📖 راهنمای استفاده از ربات کمک‌یار\n\n"
@@ -28,3 +30,6 @@ if __name__ == "__main__":
     print(f"DB Path = {DB_PATH}")
     print(f"Swears file path = {SWEARS_PATH}")
     print(f"Owner ID = {OWNER_ID if OWNER_ID else "no id"}")
+    print(f"Channel username of the bot = {BOT_CHANNEL if BOT_CHANNEL else "no channel"}")
+    print(f"Group username of the bot = {BOT_GROUP if BOT_GROUP else "no group"}")
+    print(f"Version = {VERSION}")
