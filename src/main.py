@@ -55,6 +55,7 @@ class KomakYaar():
     
        
     def setup_events(self):
+        check = lambda require_admin=False: handler_check(self.bot, self.db, self.anti_spam, require_admin)
         @self.bot.message_handler(func=lambda m: m.text == "فعال شو")
         async def cmd_startgroup(message):
             if await self.db.is_group_blocked(message.chat.id):
@@ -70,14 +71,14 @@ class KomakYaar():
             await self.bot.reply_to(message, "✅ گروه فعال شد و بات آماده مدیریت است!")
 
         @self.bot.message_handler(func=lambda m: m.text == "سیکتیر کن")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def leaver(message):
             await self.bot.reply_to(message, "ناراحت شدم، میرم سیکتیر کنم")
             await self.bot.leave_chat(message.chat.id)
 
 
         @self.bot.message_handler(func=lambda m: m.text == "راهنما")
-        @handler_check()
+        @check()
         async def send_help(message):
             try:
                 await self.bot.send_message(message.from_user.id, HELP_TEXT, parse_mode="Markdown", reply_markup=self.help_keyboard)
@@ -88,14 +89,14 @@ class KomakYaar():
 
 
         @self.bot.message_handler(func=lambda m: m.text == "ریست")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def reset_bot_in_group(message):
             msg = await self.bot.reply_to(message, "حله، الان کل رکورد گروه (بجز فیلتر ها) رو پاک و بازنویسی از صفر میکنم، انگار که هیچ اتفاقی نیوفتاده")
             await self.db.reset_group(message.chat.id)
             await self.bot.edit_message_text("خب، تموم شد، همه چی ریست شد", message.chat.id, msg.id)
 
         @self.bot.message_handler(func=lambda m: m.text.startswith("تنظیم حداکثر دعوت"))
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def change_maximum(message:types.Message):
             if message.text[len("تنظیم حداکثر دعوت"):].strip().isdigit():
                 maximum = int(message.text[len("تنظیم حداکثر دعوت"):].strip())
@@ -107,7 +108,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "کصخل اشتباه نوشتی")
 
         @self.bot.message_handler(func=lambda m: m.text == "قفل فحش")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def active_swear_strict(message:types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) in [-1, 1]:
                 await self.db.set_group_setting(message.chat.id, "SWEAR_LOCK", 1)
@@ -117,7 +118,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "قفل فعال شد")
 
         @self.bot.message_handler(func=lambda m: m.text == "بازکردن فحش")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def active_swear_strict(message:types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) in [-1, 0]:
                 await self.db.set_group_setting(message.chat.id, "SWEAR_LOCK", 0)
@@ -127,7 +128,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "قفل غیرفعال شد")
 
         @self.bot.message_handler(func=lambda m: m.text == "قفل گروه")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def lock_group(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
                 await self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 1)
@@ -137,7 +138,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "گروه از قبل نیز قفل بود" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل قفل بود کصخل")
 
         @self.bot.message_handler(func=lambda m: m.text == "بازکردن گروه")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def unlock_group(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
                 await self.bot.reply_to(message, "گروه از قبل نیز باز بود" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل باز بود کصخل")
@@ -147,7 +148,7 @@ class KomakYaar():
                 await self.bot.set_chat_permissions(message.chat.id, types.ChatPermissions(can_send_animations=not bool(int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0))), can_send_messages=True))
 
         @self.bot.message_handler(func=lambda m: m.text == "بی ادب شو")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def turn_rude(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1:
                 await self.db.set_group_setting(message.chat.id, "POLITE_MODE", 0)
@@ -156,7 +157,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "کصمغز منکه از قبلشم بی ادب بودم")
 
         @self.bot.message_handler(func=lambda m: m.text in ["باادب شو", "با ادب شو"])
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def turn_polite(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1:
                 await self.bot.reply_to(message, "بنده از قبل باادب بوده‌ام")
@@ -165,7 +166,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "ادب کیری مهمه، من باادب میشم")
 
         @self.bot.message_handler(func=lambda m: m.text == "قفل لینک")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def link_blocker(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1:
                 await self.bot.reply_to(message, "ضدلینک در حال حاضر نیز فعال است" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیالت راحت باشه نمیگفتی هم لینکارو پاک میکردم")
@@ -174,7 +175,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "ضدلینک فعال شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ردیفه ستون اوکیش کردم")
 
         @self.bot.message_handler(func= lambda m: m.text == "بازکردن لینک")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def link_unblocking(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 0:
                 await self.bot.reply_to(message, "ضدلینک از قبل نیز غیرفعال بود" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باع، قفل که قبلشم باز بود")
@@ -183,7 +184,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "ضدلینک غیرفعال شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انقدر لینکو باز کردم تا جر خورد (اوکی)")
 
         @self.bot.message_handler(func=lambda m: m.text == "قفل فوروارد")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def forward_blocker(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1:
                 await self.bot.reply_to(message, "ضدفوروارد در حال حاضر نیز فعال است" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیالت راحت باشه نمیگفتی هم فورواردارو پاک میکردم")
@@ -192,7 +193,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "ضدفوروارد فعال شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ردیفه ستون اوکیش کردم")
 
         @self.bot.message_handler(func=lambda m: m.text == "بازکردن فوروارد")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def forward_unblocking(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 0:
                 await self.bot.reply_to(message, "ضدفوروارد از قبل نیز غیرفعال بود" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باع، قفل که قبلشم باز بود")
@@ -201,7 +202,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "ضدفوروارد غیرفعال شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انقدر فورواردارو باز کردم تا جر خورد (اوکی)")
 
         @self.bot.message_handler(func=lambda m: m.text == "قفل گیف")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def gif_lock(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1:
                 await self.bot.reply_to(message, "ضدگیف در حال حاضر نیز فعال است" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "خیالت راحت باشه نمیگفتی هم گیفارو پاک میکردم")
@@ -210,7 +211,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "ضدگیف فعال شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "ردیفه ستون اوکیش کردم")
 
         @self.bot.message_handler(func=lambda m: m.text == "بازکردن گیف")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def gif_unlock(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 0:
                 await self.bot.reply_to(message, "ضدگیف از قبل نیز غیرفعال بود" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باع، قفل که قبلشم باز بود")
@@ -219,7 +220,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "ضدگیف غیرفعال شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "انقدر گیفارو باز کردم تا جر خورد (اوکی)")
 
         @self.bot.message_handler(func=lambda m: m.text == "پنل قفل")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def lock_panel(message: types.Message):
             reply_to = message.reply_to_message
             is_comment = False
@@ -252,7 +253,7 @@ class KomakYaar():
             await self.bot.reply_to(message, "از دکمه‌های زیر برای قفل و باز کردن ویژگی‌های مختلف گروه استفاده کنید:", reply_markup=lock_keyboard)
 
         @self.bot.message_handler(func=lambda m: m.text.startswith("دستورات عمومی"))
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def public_commands(message:types.Message):
             toggle = message.text.replace("دستورات عمومی", "").strip()
             if toggle == "روشن":
@@ -271,35 +272,35 @@ class KomakYaar():
                     await self.bot.reply_to(message, "دستورات عمومی خاموش شد")
 
         @self.bot.message_handler(func=lambda m: m.text.startswith("مسدود کلمه "))
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def block_word(message: types.Message):
             word = message.text.replace("مسدود کلمه ", "")
             await self.db.block_word(message.chat.id, word)
             await self.bot.reply_to(message, f"کلمه ی \"{word}\" با موفقیت مسدود شد")
 
         @self.bot.message_handler(func=lambda m: m.text.startswith("بازکردن کلمه "))
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def unblock_word(message: types.Message):
             word = message.text.replace("بازکردن کلمه ", "")
             await self.db.unblock_word(message.chat.id, word)
             await self.bot.reply_to(message, f"کلمه ی \"{word}\" با موفقیت از مسدودی خارج شد و کاربران میتوانند آنرا در گروه ارسال کنند")
 
         @self.bot.message_handler(func=lambda m: m.text.startswith("بلاک بات "))
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def block_bot_handler(message:types.Message):
             bot_username = message.text.replace("بلاک بات ", "").strip().replace("@", "")
             await self.db.block_bot(message.chat.id, bot_username)
             await self.bot.reply_to(message, f"بات {bot_username} بلاک شد")
 
         @self.bot.message_handler(func=lambda m: m.text.startswith("آن‌بلاک بات "))
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def unblock_bot_handler(message: types.Message):
             bot_username = message.text.replace("آن‌بلاک بات ", "").strip().replace("@", "")
             await self.db.unblock_bot(message.chat.id, bot_username)
             await self.bot.reply_to(message, f"بات {bot_username} آن‌بلاک شد")
         
         @self.bot.message_handler(func=lambda m: m.text == "قفل پست")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def lock_comment_post(message: types.Message):
             reply_to = message.reply_to_message
             is_comment = False
@@ -320,7 +321,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "پیام شما به هیچ پستی اشاره نمیکند، لطفا زیر پستی که میخواهید قفل شود این دستور را کامنت کنید")
 
         @self.bot.message_handler(func=lambda m: m.text == "باز کردن پست")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def unlock_comment_post(message: types.Message):
             reply_to = message.reply_to_message
             is_comment = False
@@ -341,7 +342,7 @@ class KomakYaar():
                 await self.bot.reply_to(message, "پیام شما به هیچ پستی اشاره نمیکند، لطفا زیر پستی که میخواهید قفل شود این دستور را کامنت کنید")
 
         @self.bot.message_handler(func=lambda m: m.text == "قفل اسپم")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def spam_lock_on(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "SPAM_LOCK", 0)) == 1:
                 await self.bot.reply_to(message, 
@@ -355,7 +356,7 @@ class KomakYaar():
 
 
         @self.bot.message_handler(func=lambda m: m.text == "بازکردن اسپم")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def spam_lock_off(message: types.Message):
             if int(await self.db.get_group_setting(message.chat.id, "SPAM_LOCK", 0)) == 0:
                 await self.bot.reply_to(message, 
@@ -368,7 +369,7 @@ class KomakYaar():
                     else "قفل اسپم خاموش شد")
 
         @self.bot.message_handler(func=lambda m: m.text == "درخواست کمک")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def request_help_group(message: types.Message):
             confirm_keyboard = types.InlineKeyboardMarkup()
             ok_button = types.InlineKeyboardButton("تایید ✅", callback_data="ok_btn")
@@ -377,7 +378,7 @@ class KomakYaar():
             await self.bot.reply_to(message, "این دستور، درخواستی حاوی لینک گروه به اونر برای ورود و حل مشکل شما ارسال میکند، درصورتی که مشکل شما فوری و بدون جواب داخل راهنماها باشد کمک یار به دستور اونر در گروه از کار خواهد افتاد", reply_markup=confirm_keyboard)
 
         @self.bot.message_handler(func=lambda m: m.text == "بات های بلاک شده")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def blocked_bots(message: types.Message):
             blocked_bots = await self.db.get_botBlocks(message.chat.id)
             if not blocked_bots:
@@ -389,7 +390,7 @@ class KomakYaar():
             await self.bot.reply_to(message, string)
 
         @self.bot.message_handler(func=lambda m: m.text == "درخواست برای ورود")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def toggle_request(message:types.Message):
             await self.bot.set_message_reaction(message.chat.id, message.message_id, [types.ReactionTypeEmoji('👍')])
             toggle = bool(int(await self.db.get_group_setting(message.chat.id, "creates_request", 0)))
@@ -403,7 +404,7 @@ class KomakYaar():
             await self.bot.reply_to(message, f"از دکمه ی زیر برای تغییر وضعیت درخواست دعوت استفاده کنید \n وضعیت فعلی : {"روشن" if toggle else "خاموش"}", reply_markup=markup)
 
         @self.bot.message_handler(func=lambda m: m.text == "لینک")
-        @handler_check(require_admin=False)
+        @check(require_admin=False)
         async def create_invite_link(message):
             lnk = await self.bot.create_chat_invite_link(
                 chat_id=message.chat.id,
@@ -417,7 +418,7 @@ class KomakYaar():
             )
 
         @self.bot.message_handler(func=lambda m: m.text == "فیلترها")
-        @handler_check(require_admin=False)
+        @check(require_admin=False)
         async def all_filters(message:types.Message):
             filters = await self.db.get_tags(message.chat.id)
             string = "تمامی فیلترها :\n"
@@ -426,7 +427,7 @@ class KomakYaar():
             await self.bot.reply_to(message, string)
 
         @self.bot.message_handler(func=lambda m: m.text == "تعیین مجازات اخطار")
-        @handler_check(require_admin=True)
+        @check(require_admin=True)
         async def set_warn_punish(message: types.Message):
             warn_punish = await self.db.get_group_setting(message.chat.id, "WARN_PUNISHMENT", "kick")
             keyboard = types.InlineKeyboardMarkup()
@@ -439,7 +440,7 @@ class KomakYaar():
 
 
         @self.bot.message_handler(func=lambda m: m.text.startswith("اکو "))
-        @handler_check(require_admin=False)
+        @check(require_admin=False)
         async def echo_word(message:types.Message):
             echo = message.text[len("اکو"):].strip()
             if message.reply_to_message:
@@ -953,7 +954,7 @@ https://github.com/Code-Wizaard/KomakYaar
                     await self.bot.answer_callback_query(call.id)
             except Exception as e:
                 error_text = f"callback_handler: {str(e)}\n{traceback.format_exc()}"
-                send_error_to_owner(error_text, OWNER_ID, self.bot, "CALLBACK_ERROR")
+                await send_error_to_owner(error_text, OWNER_ID, self.bot, "CALLBACK_ERROR")
 
         @self.bot.message_handler(commands=['bangroup'])
         async def ban_group(message: types.Message):
@@ -1545,7 +1546,7 @@ https://github.com/Code-Wizaard/KomakYaar
                 file.close()
             except Exception as e:
                 error_text = f"handle_messages: {str(e)}\n{traceback.format_exc()}"
-                send_error_to_owner(error_text, OWNER_ID, self.bot, "MAIN_ERROR")
+                await send_error_to_owner(error_text, OWNER_ID, self.bot, "MAIN_ERROR")
 
     async def run(self):
         print(f"{self.me.username} Group Helper running...")

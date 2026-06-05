@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import functools
 import random
 from telebot.asyncio_helper import ApiTelegramException
+from telebot import types
+import time
 
 load_dotenv()
 API_TOKEN = os.getenv("TOKEN")
@@ -64,7 +66,7 @@ def convert_digit(text: str) -> str:
     translation_table = str.maketrans(persian_arabic_digits, english_digits)
     return int(text.translate(translation_table))
 
-def send_error_to_owner(error_text, owner_id, bot, error_type="ERROR"):
+async def send_error_to_owner(error_text, owner_id, bot, error_type="ERROR"):
     """Send error details to bot owner"""
     try:
         error_message = f"""🚨 **{error_type}**
@@ -74,65 +76,71 @@ def send_error_to_owner(error_text, owner_id, bot, error_type="ERROR"):
 ❌ خطا:
 ```{error_text[:3000]}```
 """
-        bot.send_message(owner_id, error_message, parse_mode="Markdown")
+        await bot.send_message(owner_id, error_message, parse_mode="Markdown")
     except:
         print(f"Error sending to owner: {error_text}")
 
-def handler_check(require_admin: bool = False):
+def handler_check(bot, db, anti_spam, require_admin: bool = False):
     def decorator(func):
         @functools.wraps(func)
-        async def wrapper(self, message, *args, **kwargs):
+        async def wrapper(message: types.Message, *args, **kwargs):
             try:
                 chat_id = message.chat.id
                 user_id = message.from_user.id if message.from_user else None
                 text = message.text or ""
 
-                # چک بلاک بودن گروه
-                if await self.db.is_group_blocked(chat_id):
+                if await db.is_group_blocked(chat_id):
+                    return
+                if not await db.is_group_active(chat_id):
                     return
                 
-                if not await self.db.is_group_active(chat_id):
-                    return
-
-                # چک ادمین
                 if require_admin:
-                    if not await self.db.is_admin(chat_id, user_id):
-                        polite = int(await self.db.get_group_setting(chat_id, "POLITE_MODE", 1)) == 1
+                    if not await db.is_admin(chat_id, user_id):
+                        polite = int(await db.get_group_setting(chat_id, "POLITE_MODE", 1)) == 1
                         if polite:
-                            await self.bot.reply_to(message, "❌ شما دسترسی ادمین ندارید.")
+                            await bot.reply_to(message, "❌ شما دسترسی ادمین ندارید.")
                         else:
                             rude_msg = random.choice(RUDE_ADMIN_MESSAGES)
-                            await self.bot.reply_to(message, rude_msg)
+                            await bot.reply_to(message, rude_msg)
                         return
-
-                # چک دستورات عمومی
                 else:
-                    if (await self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1) != 1) and (not await self.db.is_admin(chat_id, user_id)):
+                    if (int(await db.get_group_setting(chat_id, "PUBLIC_COMMANDS", 1)) != 1) and (not await db.is_admin(chat_id, user_id)):
                         return
 
-                # چک ضد اسپم
-                if hasattr(self, 'anti_spam'):
-                    spam_result = await self.anti_spam.check(chat_id, user_id, text)
+                if anti_spam:
+                    spam_result = await anti_spam.check(chat_id, user_id, text)
                     if spam_result[0] is not None:
                         try:
-                            await self.bot.delete_message(chat_id, message.message_id)
+                            await bot.delete_message(chat_id, message.message_id)
                         except ApiTelegramException:
                             pass
-                        warning_text = f"⚠️ اسپم نکن! ({spam_result[0]})"
-                        await self.bot.reply_to(message, warning_text)
+                        try:
+                            await bot.restrict_chat_member(
+                                chat_id, 
+                                user_id, 
+                                until_date=int(time.time()) + 300,
+                                can_send_messages=False
+                            )
+                        except ApiTelegramException:
+                            pass
+                        anti_spam.reset_user(chat_id, user_id)
+                        await bot.send_message(
+                            chat_id,
+                            f"[{message.from_user.first_name}](tg://user?id={user_id}) اسپم نکن! ۵ دقیقه سکوت داده شدی 🔇",
+                            parse_mode="Markdown"
+                        )
                         return
 
-                return await func(self, message, *args, **kwargs)
+                return await func(message, *args, **kwargs)
 
             except Exception as e:
                 error_trace = traceback.format_exc()
                 print(f"❌ Error in {func.__name__}(): {e}")
-
                 try:
                     await send_error_to_owner(
                         error_text=error_trace,
                         owner_id=OWNER_ID,
-                        bot=self.bot,
+                        bot=bot,
                         error_type=f"Handler: {func.__name__}"
                     )
                 except:
