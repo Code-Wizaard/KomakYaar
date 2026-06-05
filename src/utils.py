@@ -2,15 +2,35 @@ import os
 import traceback
 import datetime
 from dotenv import load_dotenv
+import functools
+import random
+from telebot.asyncio_helper import ApiTelegramException
 
 load_dotenv()
 API_TOKEN = os.getenv("TOKEN")
 DB_PATH = os.getenv("DB_PATH", "groups.db")
 SWEARS_PATH = os.getenv("SWEARS_PATH", "swears.txt")
 OWNER_ID = int(os.getenv("OWNER_ID"))
-VERSION = "1.5.4"
-BOT_CHANNEL = "@KomakYaaaR"
+VERSION = "2.5.4"
+BOT_CHANNEL = "@KomakYaaar"
 BOT_GROUP = "@KomakYaarGap"
+
+RUDE_ADMIN_MESSAGES = [
+    "داداش تو ادمینی؟ برو باباتو ادمین کن بعد بیا اینجا حرف بزن 😏",
+    "اخه تو ادمینی؟ گمشو پی کارت، اینجا جای بزرگتراست",
+    "تو که حتی ادمین کانالت نیستی، الان ادمین گروهم شدی؟ خخخخ",
+    "عزیزم برو اول خودتو ادمین کن، بعد بیا دستور بده",
+    "مگه مامانت ادمینه که تو ادمینی؟ 😂 برو گمشو",
+    "ادمین؟ تو؟ خخخخخ، شوخی نکن داداش، دلم سوخت",
+    "برو بابا، ادمین نیستی، فقط داری وقت ما رو تلف می‌کنی",
+    "تو ادمینی؟ آره آره، منم شاه ایرانم، گمشو لاشی",
+    "داداش تو هنوز تو گروهت ادمین نیستی، اینجا چه غلطی می‌کنی؟",
+    "ادمین بودن رو ول کن، برو اول سواد ادمین شدن رو یاد بگیر",
+    "توکی باشی که اینارو برا من تنظیم کنی",
+    "لطفا تا ادمین نشدی گوه نخور",
+    "آخه تو ادمینی؟",
+    "به علت حماقت این فرد نادان و انگشت کردن در دستور ادمینی همه ی اعضای گروه تبدیل به بهنام تشکر شدند، برای دفع این حمله به فرستنده دستور فحش رکیک بدهید"
+]
 
 HELP_TEXT = """🤖 **راهنمای جامع ربات کمک‌یار**
 
@@ -57,6 +77,69 @@ def send_error_to_owner(error_text, owner_id, bot, error_type="ERROR"):
         bot.send_message(owner_id, error_message, parse_mode="Markdown")
     except:
         print(f"Error sending to owner: {error_text}")
+
+def handler_check(require_admin: bool = False):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(self, message, *args, **kwargs):
+            try:
+                chat_id = message.chat.id
+                user_id = message.from_user.id if message.from_user else None
+                text = message.text or ""
+
+                # چک بلاک بودن گروه
+                if await self.db.is_group_blocked(chat_id):
+                    return
+                
+                if not await self.db.is_group_active(chat_id):
+                    return
+
+                # چک ادمین
+                if require_admin:
+                    if not await self.db.is_admin(chat_id, user_id):
+                        polite = int(await self.db.get_group_setting(chat_id, "POLITE_MODE", 1)) == 1
+                        if polite:
+                            await self.bot.reply_to(message, "❌ شما دسترسی ادمین ندارید.")
+                        else:
+                            rude_msg = random.choice(RUDE_ADMIN_MESSAGES)
+                            await self.bot.reply_to(message, rude_msg)
+                        return
+
+                # چک دستورات عمومی
+                else:
+                    if (await self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1) != 1) and (not await self.db.is_admin(chat_id, user_id)):
+                        return
+
+                # چک ضد اسپم
+                if hasattr(self, 'anti_spam'):
+                    spam_result = await self.anti_spam.check(chat_id, user_id, text)
+                    if spam_result[0] is not None:
+                        try:
+                            await self.bot.delete_message(chat_id, message.message_id)
+                        except ApiTelegramException:
+                            pass
+                        warning_text = f"⚠️ اسپم نکن! ({spam_result[0]})"
+                        await self.bot.reply_to(message, warning_text)
+                        return
+
+                return await func(self, message, *args, **kwargs)
+
+            except Exception as e:
+                error_trace = traceback.format_exc()
+                print(f"❌ Error in {func.__name__}(): {e}")
+
+                try:
+                    await send_error_to_owner(
+                        error_text=error_trace,
+                        owner_id=OWNER_ID,
+                        bot=self.bot,
+                        error_type=f"Handler: {func.__name__}"
+                    )
+                except:
+                    pass
+
+        return wrapper
+    return decorator
 
 if __name__ == "__main__":
     print(f"API Token = {API_TOKEN if API_TOKEN else "no token"}")

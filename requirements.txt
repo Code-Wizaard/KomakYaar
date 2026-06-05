@@ -2,3 +2,4 @@ telebot
 python-dotenv
 requests
 cryptography
+aiosqlite
