@@ -1163,10 +1163,23 @@ https://github.com/Code-Wizaard/KomakYaar
                     if spam_result[0] is not None:
                         try:
                             await self.bot.delete_message(chat_id, message.message_id)
-                        except:
+                        except ApiTelegramException:
                             pass
-                        warning = f"⚠️ اسپم نکن! ({spam_result[0]})"
-                        await self.bot.reply_to(message, warning)
+                        try:
+                            await self.bot.restrict_chat_member(
+                                chat_id, 
+                                user_id, 
+                                until_date=int(time.time()) + 300,
+                                can_send_messages=False
+                            )
+                        except ApiTelegramException:
+                            pass
+                        self.anti_spam.reset_user(chat_id, user_id)
+                        await self.bot.send_message(
+                            chat_id,
+                            f"[{message.from_user.first_name}](tg://user?id={user_id}) اسپم نکن! ۵ دقیقه سکوت داده شدی 🔇",
+                            parse_mode="Markdown"
+                        )
                         return
 
                 
