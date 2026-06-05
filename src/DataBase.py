@@ -1,12 +1,11 @@
 import aiosqlite
-from main import bot
 from utils import DB_PATH
 
 
 class DataBase():
 
-    def __init__(self):
-        pass
+    def __init__(self, bot):
+        self.bot = bot
 
     def _db(self) -> aiosqlite.Connection:
         return aiosqlite.connect(DB_PATH)
@@ -272,7 +271,7 @@ class DataBase():
 
     async def is_admin(self, group_id, user_id):
         try:
-            admins = await bot.get_chat_administrators(group_id)
+            admins = await self.bot.get_chat_administrators(group_id)
             return any(a.user.id == user_id for a in admins)
         except:
             return False
@@ -325,7 +324,7 @@ class DataBase():
             rows = await cur.fetchone()
             msg_id = rows[0]
             group_id = rows[1]
-            await bot.edit_message_text("گزارش با موفقیت توسط ادمین بررسی شد!", group_id, msg_id)
+            await self.bot.edit_message_text("گزارش با موفقیت توسط ادمین بررسی شد!", group_id, msg_id)
             await con.execute("UPDATE reports SET status=? WHERE id=?", ("Checked", rep_id,))
             await con.commit()
             
@@ -517,7 +516,7 @@ class DataBase():
         err = 0
         for row in rows:
             try:
-                await bot.send_message(row[0], message, parse_mode="Markdown")
+                await self.bot.send_message(row[0], message, parse_mode="Markdown")
                 success += 1                
             except:
                 err += 1

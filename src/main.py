@@ -49,7 +49,7 @@ class KomakYaar():
         self.back_keyboard.add(
             types.InlineKeyboardButton("🔙 برگشت به منوی اصلی", callback_data="help_main")
         )
-        self.db = DataBase()
+        self.db = DataBase(self.bot)
         self.anti_spam = AntiSpam(self.db)
         self.setup_events()
     
