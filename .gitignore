@@ -212,3 +212,8 @@ __marimo__/
 # DataBase files
 db/
 groups.db
+
+# Test and debug files
+test_output/
+debug.log
+nohup.out
