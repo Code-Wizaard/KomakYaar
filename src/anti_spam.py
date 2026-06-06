@@ -43,7 +43,7 @@ class AntiSpam:
         Check if user is flooding
         Returns: (is_flooding, message_count)
         """
-        if not await self.db.get_group_setting(chat_id, "FLOOD_LOCK"):
+        if int(await self.db.get_group_setting(chat_id, "FLOOD_LOCK", 0)) != 1:
             return False, 0
             
         limit = await self.get_flood_limit(chat_id)
@@ -67,7 +67,7 @@ class AntiSpam:
         Check if user is spamming (repeated identical messages)
         Returns: (is_spam, repeat_count)
         """
-        if not await self.db.get_group_setting(chat_id, "SPAM_LOCK"):
+        if int(await self.db.get_group_setting(chat_id, "SPAM_LOCK", 0)) != 1:
             return False, 0
             
         if not text:

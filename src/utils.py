@@ -108,6 +108,15 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                         return
 
                 if anti_spam:
+                    if not text:
+                        if message.sticker:
+                            text = f"sticker:{message.sticker.file_unique_id}"
+                        elif message.animation:
+                            text = f"animation:{message.animation.file_unique_id}"
+                        elif message.document:
+                            text = f"document:{message.document.file_unique_id}"
+                        else:
+                            text = f"{message.content_type}:{message.message_id}"
                     spam_result = await anti_spam.check(chat_id, user_id, text)
                     if spam_result[0] is not None:
                         try:

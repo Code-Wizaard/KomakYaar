@@ -230,7 +230,8 @@ class KomakYaar():
                 types.InlineKeyboardButton("قفل فوروارد ✅" if int(await self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل فحش ✅" if int(await self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل گروه ✅" if int(await self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
-                types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "on"))
+                types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
+                types.InlineKeyboardButton("قفل اسپم ✅" if int(await self.db.get_group_setting(message.chat.id, "SPAM_LOCK", 0)) == 1 else "قفل اسپم ❌", callback_data="lock_spam:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "SPAM_LOCK", 0)) == 1 else "on"))
             )
             while reply_to:
                 if reply_to.is_automatic_forward:
@@ -699,7 +700,8 @@ https://github.com/Code-Wizaard/KomakYaar
                         types.InlineKeyboardButton("قفل فوروارد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل فحش ✅" if int(await self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل گروه ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on"))
+                        types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل اسپم ✅" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "قفل اسپم ❌", callback_data="lock_spam:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "on")),
                     )
                     
                     if is_comment:
@@ -1159,6 +1161,15 @@ https://github.com/Code-Wizaard/KomakYaar
                 if (int(await self.db.get_group_setting(chat_id, "SPAM_LOCK", 0)) == 1 or
                     int(await self.db.get_group_setting(chat_id, "FLOOD_LOCK", 0)) == 1):
                     
+                    if not text:
+                        if message.sticker:
+                            text = f"sticker:{message.sticker.file_unique_id}"
+                        elif message.animation:
+                            text = f"animation:{message.animation.file_unique_id}"
+                        elif message.document:
+                            text = f"document:{message.document.file_unique_id}"
+                        else:
+                            text = f"{message.content_type}:{message.message_id}"
                     spam_result = await self.anti_spam.check(chat_id, user_id, text)
                     if spam_result[0] is not None:
                         try:
