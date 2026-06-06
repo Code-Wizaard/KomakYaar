@@ -89,11 +89,15 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                 user_id = message.from_user.id if message.from_user else None
                 text = message.text or ""
 
+                # بلاک بودن گروه
                 if await db.is_group_blocked(chat_id):
                     return
+
+                # فعال بودن گروه
                 if not await db.is_group_active(chat_id):
                     return
-                
+
+                # چک ادمین
                 if require_admin:
                     if not await db.is_admin(chat_id, user_id):
                         polite = int(await db.get_group_setting(chat_id, "POLITE_MODE", 1)) == 1
@@ -103,55 +107,50 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                             rude_msg = random.choice(RUDE_ADMIN_MESSAGES)
                             await bot.reply_to(message, rude_msg)
                         return
+
+                # چک دستورات عمومی
                 else:
-                    if (int(await db.get_group_setting(chat_id, "PUBLIC_COMMANDS", 1)) != 1) and (not await db.is_admin(chat_id, user_id)):
+                    if int(await db.get_group_setting(chat_id, "PUBLIC_COMMANDS", 1)) != 1 and not await db.is_admin(chat_id, user_id):
                         return
 
+                # ==================== ضد اسپم ====================
                 if anti_spam:
-                    if not text:
-                        if message.sticker:
-                            text = f"sticker:{message.sticker.file_unique_id}"
-                        elif message.animation:
-                            text = f"animation:{message.animation.file_unique_id}"
-                        elif message.document:
-                            text = f"document:{message.document.file_unique_id}"
+                    spam_text = text
+                    if not spam_text:
+                        if hasattr(message, 'sticker') and message.sticker:
+                            spam_text = f"sticker:{message.sticker.file_unique_id}"
+                        elif hasattr(message, 'animation') and message.animation:
+                            spam_text = f"animation:{message.animation.file_unique_id}"
                         else:
-                            text = f"{message.content_type}:{message.message_id}"
-                    spam_result = await anti_spam.check(chat_id, user_id, text)
+                            spam_text = f"{message.content_type}:{message.message_id}"
+
+                    spam_result = await anti_spam.check(chat_id, user_id, spam_text)
                     if spam_result[0] is not None:
+                        violation, count = spam_result
                         try:
                             await bot.delete_message(chat_id, message.message_id)
-                        except ApiTelegramException:
+                        except:
                             pass
                         try:
-                            await bot.restrict_chat_member(
-                                chat_id, 
-                                user_id, 
-                                until_date=int(time.time()) + 300,
-                                can_send_messages=False
-                            )
-                        except ApiTelegramException:
+                            await bot.restrict_chat_member(chat_id, user_id, until_date=int(time.time()) + 300, can_send_messages=False)
+                        except:
                             pass
                         anti_spam.reset_user(chat_id, user_id)
                         await bot.send_message(
                             chat_id,
-                            f"[{message.from_user.first_name}](tg://user?id={user_id}) اسپم نکن! ۵ دقیقه سکوت داده شدی 🔇",
+                            f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇",
                             parse_mode="Markdown"
                         )
                         return
 
+                # اجرای handler اصلی
                 return await func(message, *args, **kwargs)
 
             except Exception as e:
                 error_trace = traceback.format_exc()
                 print(f"❌ Error in {func.__name__}(): {e}")
                 try:
-                    await send_error_to_owner(
-                        error_text=error_trace,
-                        owner_id=OWNER_ID,
-                        bot=bot,
-                        error_type=f"Handler: {func.__name__}"
-                    )
+                    await send_error_to_owner(error_trace, OWNER_ID, bot, f"Handler: {func.__name__}")
                 except:
                     pass
 
