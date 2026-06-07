@@ -113,6 +113,14 @@ class DataBase():
                     post_id INTEGER
                 )
             """)
+            await con.execute("""CREATE TABLE IF NOT EXISTS bridge_channels (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telegram_channel_id INTEGER NOT NULL,
+                bale_channel_id TEXT NOT NULL,
+                enabled INTEGER DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(telegram_channel_id));
+            """)
 
 
             await con.commit()
@@ -502,6 +510,47 @@ class DataBase():
             if await self.post_lock_status(group_id, post_id):
                 await con.execute("DELETE FROM locked_posts WHERE group_id=? AND post_id=?", (group_id, post_id))
                 await con.commit()
+
+    async def set_bridge(self, telegram_channel_id: int, bale_channel_id: str):
+        """تنظیم یا بروزرسانی بریج"""
+        async with self._db() as con:
+            await con.execute("""
+                INSERT INTO bridge_channels 
+                (telegram_channel_id, bale_channel_id, enabled)
+                VALUES (?, ?, 1)
+                ON CONFLICT(telegram_channel_id) 
+                DO UPDATE SET bale_channel_id = ?, enabled = 1
+            """, (telegram_channel_id, bale_channel_id, bale_channel_id))
+            await con.commit()
+
+
+    async def get_bale_bridge_channel(self, telegram_channel_id: int):
+        """دریافت آیدی کانال بله برای یک کانال تلگرام"""
+        async with self._db() as con:
+            cur = await con.execute("SELECT bale_channel_id FROM bridge_channels WHERE telegram_channel_id = ? AND enabled = 1", (telegram_channel_id,))
+            row = await cur.fetchone()
+        return row[0] if row else None
+    
+    async def get_telegram_bridge_channel(self, bale_channel_id: str):
+        """دریافت آیدی کانال تلگرام برای یک کانال بله"""
+        async with self._db() as con:
+            cur = await con.execute("SELECT telegram_channel_id FROM bridge_channels WHERE bale_channel_id = ? AND enabled = 1", (bale_channel_id,))
+            row = await cur.fetchone()
+        return row[0] if row else None
+
+
+    async def remove_bridge(self, telegram_channel_id: int):
+        """غیرفعال کردن بریج"""
+        async with self._db() as con:
+            await con.execute("UPDATE bridge_channels SET enabled = 0 WHERE telegram_channel_id = ?", (telegram_channel_id,))
+            await con.commit()
+
+
+    async def get_all_active_bridges(self):
+        """دریافت همه بریج‌های فعال"""
+        async with self._db() as con:
+            rows = await con.execute("SELECT telegram_channel_id, bale_channel_id FROM bridge_channels WHERE enabled = 1").fetchall()
+        return dict(rows)
 
     async def update_message(self, updates:list, version:str):
         message = f"*نسخه جدید ربات کمک‌یار (***{version}***) منتشر شد!*\n\n"

@@ -10,6 +10,7 @@ import time
 
 load_dotenv()
 API_TOKEN = os.getenv("TOKEN")
+BALE_TOKEN = os.getenv("BALE_TOKEN")
 DB_PATH = os.getenv("DB_PATH", "groups.db")
 SWEARS_PATH = os.getenv("SWEARS_PATH", "swears.txt")
 OWNER_ID = int(os.getenv("OWNER_ID"))
@@ -96,23 +97,7 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                 # فعال بودن گروه
                 if not await db.is_group_active(chat_id):
                     return
-
-                # چک ادمین
-                if require_admin:
-                    if not await db.is_admin(chat_id, user_id):
-                        polite = int(await db.get_group_setting(chat_id, "POLITE_MODE", 1)) == 1
-                        if polite:
-                            await bot.reply_to(message, "❌ شما دسترسی ادمین ندارید.")
-                        else:
-                            rude_msg = random.choice(RUDE_ADMIN_MESSAGES)
-                            await bot.reply_to(message, rude_msg)
-                        return
-
-                # چک دستورات عمومی
-                else:
-                    if int(await db.get_group_setting(chat_id, "PUBLIC_COMMANDS", 1)) != 1 and not await db.is_admin(chat_id, user_id):
-                        return
-
+                
                 # ==================== ضد اسپم ====================
                 if anti_spam:
                     spam_text = text
@@ -142,6 +127,24 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                             parse_mode="Markdown"
                         )
                         return
+
+                # چک ادمین
+                if require_admin:
+                    if not await db.is_admin(chat_id, user_id):
+                        polite = int(await db.get_group_setting(chat_id, "POLITE_MODE", 1)) == 1
+                        if polite:
+                            await bot.reply_to(message, "❌ شما دسترسی ادمین ندارید.")
+                        else:
+                            rude_msg = random.choice(RUDE_ADMIN_MESSAGES)
+                            await bot.reply_to(message, rude_msg)
+                        return
+
+                # چک دستورات عمومی
+                else:
+                    if int(await db.get_group_setting(chat_id, "PUBLIC_COMMANDS", 1)) != 1 and not await db.is_admin(chat_id, user_id):
+                        return
+
+                
 
                 # اجرای handler اصلی
                 return await func(message, *args, **kwargs)

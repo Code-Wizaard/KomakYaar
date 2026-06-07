@@ -6,6 +6,9 @@ import asyncio
 import time
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
+from pyrobale import Client
+from pyrobale.objects import Message, InputFile
+from pyrobale.objects.enums import ChatType
 import logging
 import json
 import re
@@ -15,12 +18,15 @@ import base64
 import hashlib
 from cryptography.fernet import Fernet
 from anti_spam import AntiSpam
+import aiohttp
+from io import BytesIO
 logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
 
 class KomakYaar():
     def __init__(self):
         self.bot = AsyncTeleBot(API_TOKEN)
         self.me = asyncio.run(self.bot.get_me())
+        self.bale_bot = Client(BALE_TOKEN)
         # Main help keyboard - categorized
         self.help_keyboard = types.InlineKeyboardMarkup(row_width=2)
         self.help_keyboard.add(
@@ -1157,7 +1163,7 @@ https://github.com/Code-Wizaard/KomakYaar
             except Exception as e:
                 await self.bot.reply_to(message, f"ریدی ارور گرفتم \n {e}")
             finally:
-                con.close()
+                await con.close()
 
         @self.bot.message_handler(func= lambda m: m.from_user.id == OWNER_ID and m.text == ";id;")
         async def id_informations_owner(message: types.Message):
@@ -1172,6 +1178,163 @@ https://github.com/Code-Wizaard/KomakYaar
         async def make_id_into_tag(message: types.Message):
             user_id = message.text.replace("(tag): ", "").strip()
             await self.bot.reply_to(message, f"[HereYouGo](tg://user?id={user_id})", parse_mode="Markdown")
+
+        @self.bot.channel_post_handler(func=lambda m: m.text.startswith("/setbridge "))
+        async def set_bridge(message: types.Message):
+            if not message.text.startswith("/setbridge "):
+                await self.bot.reply_to(message, "فرمت دستور اشتباه است")
+                return
+            target_chat_id = message.text.replace("/setbridge ", "").strip()
+            if not target_chat_id:
+                await self.bot.reply_to(message, "لطفا آیدی گروه مقصد را وارد کنید\n برای انجام این کار میتوانید در کانال مقصد خود که کمک‌یـــــار را عضو ان کرده اید و بعنوان ادمین انتخاب کرده اید از دستور /getid استفاده کنید و آیدی گروه را دریافت کنید")
+                return
+            try:
+                chat = await self.bale_bot.get_chat(target_chat_id)
+            except Exception as e:
+                await self.bot.reply_to(message, "چنین کانالی ای وجود ندارد یا من به آن دسترسی ندارم")
+                await send_error_to_owner(f"Error in set_bridge: {str(e)}\n{traceback.format_exc()}", OWNER_ID, self.bot, "SET_BRIDGE_ERROR")
+                return
+            await self.db.set_bridge(message.chat.id, target_chat_id)
+            await self.bot.reply_to(message, f"پل ارتباطی با کانال {chat.title} با موفقیت تنظیم شد")
+
+        @self.bot.channel_post_handler(func=lambda m: m.text.startswith("/removebridge "))
+        async def remove_bridge(message: types.Message):
+            if not message.text.startswith("/removebridge "):
+                await self.bot.reply_to(message, "فرمت دستور اشتباه است")
+                return
+            target_chat_id = message.text.replace("/removebridge ", "").strip()
+            if not target_chat_id:
+                await self.bot.reply_to(message, "لطفا آیدی کانال مقصد را وارد کنید\n برای انجام این کار میتوانید در کانال مقصد خود که کمک‌یـــــار را عضو ان کرده اید و بعنوان ادمین انتخاب کرده اید از دستور /getid استفاده کنید و آیدی کانال را دریافت کنید")
+                return
+            await self.db.remove_bridge(message.chat.id, target_chat_id)
+            await self.bot.reply_to(message, f"پل ارتباطی با کانال {target_chat_id} با موفقیت حذف شد")
+
+        @self.bot.channel_post_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation', 'video_note'])
+        async def handle_telegram_bridge(message: types.Message):
+            bale_chat_id = await self.db.get_bale_bridge_channel(message.chat.id)
+            if not bale_chat_id:
+                return
+
+            try:
+                if message.text:
+                    await self.bale_bot.send_message(bale_chat_id, message.text)
+
+                elif message.photo:
+                    photo = message.photo[-1]
+                    file_info = await self.bot.get_file(photo.file_id)
+                    downloaded = await self.bot.download_file(file_info.file_path)
+                    
+                    input_file = InputFile(downloaded, file_name="photo.jpg")
+                    await self.bale_bot.send_photo(bale_chat_id, input_file, caption=message.caption or "")
+
+                elif message.video:
+                    file_info = await self.bot.get_file(message.video.file_id)
+                    downloaded = await self.bot.download_file(file_info.file_path)
+                    input_file = InputFile(downloaded, file_name="video.mp4")
+                    await self.bale_bot.send_video(bale_chat_id, input_file, caption=message.caption or "")
+
+                elif message.document:
+                    file_info = await self.bot.get_file(message.document.file_id)
+                    downloaded = await self.bot.download_file(file_info.file_path)
+                    file_name = message.document.file_name or "document"
+                    input_file = InputFile(downloaded, file_name=file_name)
+                    await self.bale_bot.send_document(bale_chat_id, input_file, caption=message.caption or "")
+
+                elif message.animation:
+                    file_info = await self.bot.get_file(message.animation.file_id)
+                    downloaded = await self.bot.download_file(file_info.file_path)
+                    input_file = InputFile(downloaded, file_name="animation.gif")
+                    await self.bale_bot.send_animation(bale_chat_id, input_file, caption=message.caption or "")
+
+                elif message.sticker:
+                    file_info = await self.bot.get_file(message.sticker.file_id)
+                    downloaded = await self.bot.download_file(file_info.file_path)
+                    input_file = InputFile(downloaded, file_name="sticker.webp")
+                    await self.bale_bot.send_sticker(bale_chat_id, input_file)
+
+                elif message.voice:
+                    file_info = await self.bot.get_file(message.voice.file_id)
+                    downloaded = await self.bot.download_file(file_info.file_path)
+                    input_file = InputFile(downloaded, file_name="voice.ogg")
+                    await self.bale_bot.send_voice(bale_chat_id, input_file)
+
+            except Exception as e:
+                error_text = f"Telegram → Bale Bridge Error:\n{traceback.format_exc()}"
+                print(error_text)
+                await send_error_to_owner(error_text, OWNER_ID, self.bot, "BRIDGE_TG_TO_BALE")
+
+        @self.bale_bot.on_message()
+        async def get_id(message: Message):
+            if message.text and message.text == "/getid" and message.chat.type == ChatType.CHANNEL:
+                await self.bale_bot.send_message(message.chat.id, f"آیدی کانال : {message.chat.id}")
+
+        @self.bale_bot.on_message()
+        async def handle_bale_bridge(message: Message):
+            if message.chat.type == ChatType.CHANNEL:
+                bridge = await self.db.get_telegram_bridge_channel(message.chat.id)
+                if not bridge:
+                    return
+                telegram_chat_id = bridge
+                try:
+                    text = (message.text or message.caption) or ""
+
+                    if message.text:
+                        await self.bot.send_message(telegram_chat_id, text)
+
+                    elif message.photo:
+                        photo = message.photo[-1]
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(f"https://tapi.bale.ai/file/bot{BALE_TOKEN}/{photo['file_id']}") as resp:
+                                data = await resp.read()
+                        photo_file = BytesIO(data)
+                        photo_file.name = "photo.jpg"
+                        await self.bot.send_photo(telegram_chat_id, photo_file, caption=text)
+
+                    elif message.video:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(f"https://tapi.bale.ai/file/bot{BALE_TOKEN}/{message.video['file_id']}") as resp:
+                                data = await resp.read()
+                        video_file = BytesIO(data)
+                        video_file.name = message.video.get("file_name", "video.mp4")
+                        await self.bot.send_video(telegram_chat_id, video_file, caption=text)
+
+                    elif message.document:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(f"https://tapi.bale.ai/file/bot{BALE_TOKEN}/{message.document.file_id}") as resp:
+                                data = await resp.read()
+                        document_file = BytesIO(data)
+                        document_file.name = message.document.file_name or"document.pdf"
+                        await self.bot.send_document(telegram_chat_id, document_file, caption=text)
+
+                    elif message.animation:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(f"https://tapi.bale.ai/file/bot{BALE_TOKEN}/{message.animation.file_id}") as resp:
+                                data = await resp.read()
+                        animation_file = BytesIO(data)
+                        animation_file.name = message.animation.file_name or "animation.gif"
+                        await self.bot.send_animation(telegram_chat_id, animation_file, caption=text)
+
+                    elif message.sticker:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(f"https://tapi.bale.ai/file/bot{BALE_TOKEN}/{message.sticker.file_id}") as resp:
+                                data = await resp.read()
+                        sticker_file = BytesIO(data)
+                        sticker_file.name = "sticker.webp"
+                        await self.bot.send_sticker(telegram_chat_id, sticker_file)
+
+                    elif message.voice:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(f"https://tapi.bale.ai/file/bot{BALE_TOKEN}/{message.voice.file_id}") as resp:
+                                data = await resp.read()
+                        voice_file = BytesIO(data)
+                        voice_file.name = "voice.ogg"
+                        await self.bot.send_voice(telegram_chat_id, voice_file, caption=text)
+
+                    else:
+                        await self.bot.send_message(telegram_chat_id, f"نوع محتوا ناشناخته")
+                except Exception as e:
+                    error_text = f"Error in Bale Bridge: {str(e)}\n{traceback.format_exc()}"
+                    await send_error_to_owner(error_text, OWNER_ID, self.bot, "BALE_BRIDGE_ERROR")
 
 
         @self.bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation', 'video_note'])
@@ -1610,11 +1773,30 @@ https://github.com/Code-Wizaard/KomakYaar
         print(f"{self.me.username} Group Helper running...")
         try:
             await self.db.init_db()
-            await self.bot.infinity_polling(skip_pending=False, timeout=40)
+            print("✅ Database initialized")
+
+                
+            telegram_task = asyncio.create_task(
+                self.bot.infinity_polling(skip_pending=False, timeout=40)
+            )
+                
+            bale_task = None
+            if hasattr(self, 'bale_bot') and self.bale_bot:
+                print("✅ Starting Bale Bot...")
+                bale_task = asyncio.create_task(self.bale_bot.start_polling(timeout=40))
+                
+            if bale_task:
+                await asyncio.gather(telegram_task, bale_task)
+            else:
+                await telegram_task
+
         except Exception as e:
             error_text = f"Polling crashed: {str(e)}\n{traceback.format_exc()}"
-            send_error_to_owner(error_text, OWNER_ID, self.bot, "POLLING_CRASH")
-            print(f"Error: {e}")
+            print(error_text)
+            try:
+                await send_error_to_owner(error_text, OWNER_ID, self.bot, "POLLING_CRASH")
+            except:
+                pass
     
     async def stop(self):
         print(f"Shutting down {self.me.username}...")

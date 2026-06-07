@@ -1,4 +1,5 @@
 telebot
+pyrobale
 python-dotenv
 requests
 cryptography
