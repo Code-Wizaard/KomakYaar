@@ -1206,7 +1206,7 @@ https://github.com/Code-Wizaard/KomakYaar
             if not target_chat_id:
                 await self.bot.reply_to(message, "لطفا آیدی کانال مقصد را وارد کنید\n برای انجام این کار میتوانید در کانال مقصد خود که کمک‌یـــــار را عضو ان کرده اید و بعنوان ادمین انتخاب کرده اید از دستور /getid استفاده کنید و آیدی کانال را دریافت کنید")
                 return
-            await self.db.remove_bridge(message.chat.id, target_chat_id)
+            await self.db.remove_bridge(message.chat.id)
             await self.bot.reply_to(message, f"پل ارتباطی با کانال {target_chat_id} با موفقیت حذف شد")
 
         @self.bot.channel_post_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation', 'video_note'])
