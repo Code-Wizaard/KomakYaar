@@ -1211,7 +1211,7 @@ https://github.com/Code-Wizaard/KomakYaar
 
         @self.bot.channel_post_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation', 'video_note'])
         async def handle_telegram_bridge(message: types.Message):
-            if message.from_user and message.from_user.id == self.me.id:
+            if message.sender_chat and message.sender_chat.id == self.me.id:
                 return
             
             bale_chat_id = await self.db.get_bale_bridge_channel(message.chat.id)
