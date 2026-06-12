@@ -1290,7 +1290,7 @@ https://github.com/Code-Wizaard/KomakYaar
                     text = ""
                     if message.forward_from_chat:
                         text = f"فوروارد شده از [{message.forward_from_chat['title']}](https://ble.ir/{message.forward_from_chat['username']})\n\n"
-                    text = text + (message.text or message.caption) or ""
+                    text = text + ((message.text or message.caption) or "")
 
                     if message.text:
                         await self.bot.send_message(telegram_chat_id, text, parse_mode="Markdown")
