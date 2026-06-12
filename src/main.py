@@ -1211,7 +1211,8 @@ https://github.com/Code-Wizaard/KomakYaar
 
         @self.bot.channel_post_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation', 'video_note'])
         async def handle_telegram_bridge(message: types.Message):
-            if message.sender_chat and message.sender_chat.id == self.me.id:
+            if (message.from_user and message.from_user.id == self.me.id) or \
+                (message.sender_chat and message.sender_chat.id == self.me.id):
                 return
             
             bale_chat_id = await self.db.get_bale_bridge_channel(message.chat.id)
@@ -1219,8 +1220,13 @@ https://github.com/Code-Wizaard/KomakYaar
                 return
 
             try:
+                text = ""
+                if message.forward_origin:
+                    text = f"فوروارد شده از [{message.forward_origin.chat.title}](https://t.me/{message.forward_origin.chat.username})\n\n"
+                text = text + ((message.text or message.caption) or "")
+
                 if message.text:
-                    await self.bale_bot.send_message(bale_chat_id, message.text)
+                    await self.bale_bot.send_message(bale_chat_id, text)
 
                 elif message.photo:
                     photo = message.photo[-1]
@@ -1228,26 +1234,26 @@ https://github.com/Code-Wizaard/KomakYaar
                     downloaded = await self.bot.download_file(file_info.file_path)
                     
                     input_file = InputFile(downloaded, file_name="photo.jpg")
-                    await self.bale_bot.send_photo(bale_chat_id, input_file, caption=message.caption or "")
+                    await self.bale_bot.send_photo(bale_chat_id, input_file, caption=text)
 
                 elif message.video:
                     file_info = await self.bot.get_file(message.video.file_id)
                     downloaded = await self.bot.download_file(file_info.file_path)
                     input_file = InputFile(downloaded, file_name="video.mp4")
-                    await self.bale_bot.send_video(bale_chat_id, input_file, caption=message.caption or "")
+                    await self.bale_bot.send_video(bale_chat_id, input_file, caption=text)
 
                 elif message.document:
                     file_info = await self.bot.get_file(message.document.file_id)
                     downloaded = await self.bot.download_file(file_info.file_path)
                     file_name = message.document.file_name or "document"
                     input_file = InputFile(downloaded, file_name=file_name)
-                    await self.bale_bot.send_document(bale_chat_id, input_file, caption=message.caption or "")
+                    await self.bale_bot.send_document(bale_chat_id, input_file, caption=text)
 
                 elif message.animation:
                     file_info = await self.bot.get_file(message.animation.file_id)
                     downloaded = await self.bot.download_file(file_info.file_path)
                     input_file = InputFile(downloaded, file_name="animation.gif")
-                    await self.bale_bot.send_animation(bale_chat_id, input_file, caption=message.caption or "")
+                    await self.bale_bot.send_animation(bale_chat_id, input_file, caption=text)
 
                 elif message.sticker:
                     file_info = await self.bot.get_file(message.sticker.file_id)
@@ -1274,15 +1280,20 @@ https://github.com/Code-Wizaard/KomakYaar
         @self.bale_bot.on_message()
         async def handle_bale_bridge(message: Message):
             if message.chat.type == ChatType.CHANNEL:
+                if (message.sender_chat and message.sender_chat.id == self.me.id):
+                    return
                 bridge = await self.db.get_telegram_bridge_channel(message.chat.id)
                 if not bridge:
                     return
                 telegram_chat_id = bridge
                 try:
-                    text = (message.text or message.caption) or ""
+                    text = ""
+                    if message.forward_from_chat:
+                        text = f"فوروارد شده از [{message.forward_from_chat['title']}](https://ble.ir/{message.forward_from_chat['username']})\n\n"
+                    text = text + (message.text or message.caption) or ""
 
                     if message.text:
-                        await self.bot.send_message(telegram_chat_id, text)
+                        await self.bot.send_message(telegram_chat_id, text, parse_mode="Markdown")
 
                     elif message.photo:
                         photo = message.photo[-1]
@@ -1291,7 +1302,7 @@ https://github.com/Code-Wizaard/KomakYaar
                                 data = await resp.read()
                         photo_file = BytesIO(data)
                         photo_file.name = "photo.jpg"
-                        await self.bot.send_photo(telegram_chat_id, photo_file, caption=text)
+                        await self.bot.send_photo(telegram_chat_id, photo_file, caption=text, parse_mode="Markdown")
 
                     elif message.video:
                         async with aiohttp.ClientSession() as session:
@@ -1299,15 +1310,7 @@ https://github.com/Code-Wizaard/KomakYaar
                                 data = await resp.read()
                         video_file = BytesIO(data)
                         video_file.name = message.video.get("file_name", "video.mp4")
-                        await self.bot.send_video(telegram_chat_id, video_file, caption=text)
-
-                    elif message.document:
-                        async with aiohttp.ClientSession() as session:
-                            async with session.get(f"https://tapi.bale.ai/file/bot{BALE_TOKEN}/{message.document.file_id}") as resp:
-                                data = await resp.read()
-                        document_file = BytesIO(data)
-                        document_file.name = message.document.file_name or"document.pdf"
-                        await self.bot.send_document(telegram_chat_id, document_file, caption=text)
+                        await self.bot.send_video(telegram_chat_id, video_file, caption=text, parse_mode="Markdown")
 
                     elif message.animation:
                         async with aiohttp.ClientSession() as session:
@@ -1315,7 +1318,7 @@ https://github.com/Code-Wizaard/KomakYaar
                                 data = await resp.read()
                         animation_file = BytesIO(data)
                         animation_file.name = message.animation.file_name or "animation.gif"
-                        await self.bot.send_animation(telegram_chat_id, animation_file, caption=text)
+                        await self.bot.send_animation(telegram_chat_id, animation_file, caption=text, parse_mode="Markdown")
 
                     elif message.sticker:
                         async with aiohttp.ClientSession() as session:
@@ -1323,7 +1326,7 @@ https://github.com/Code-Wizaard/KomakYaar
                                 data = await resp.read()
                         sticker_file = BytesIO(data)
                         sticker_file.name = "sticker.webp"
-                        await self.bot.send_sticker(telegram_chat_id, sticker_file)
+                        await self.bot.send_sticker(telegram_chat_id, sticker_file, parse_mode="Markdown")
 
                     elif message.voice:
                         async with aiohttp.ClientSession() as session:
@@ -1331,7 +1334,15 @@ https://github.com/Code-Wizaard/KomakYaar
                                 data = await resp.read()
                         voice_file = BytesIO(data)
                         voice_file.name = "voice.ogg"
-                        await self.bot.send_voice(telegram_chat_id, voice_file, caption=text)
+                        await self.bot.send_voice(telegram_chat_id, voice_file, caption=text, parse_mode="Markdown")
+
+                    elif message.document:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(f"https://tapi.bale.ai/file/bot{BALE_TOKEN}/{message.document.file_id}") as resp:
+                                data = await resp.read()
+                        document_file = BytesIO(data)
+                        document_file.name = message.document.file_name or"document.pdf"
+                        await self.bot.send_document(telegram_chat_id, document_file, caption=text, parse_mode="Markdown")
 
                     else:
                         await self.bot.send_message(telegram_chat_id, f"نوع محتوا ناشناخته")
