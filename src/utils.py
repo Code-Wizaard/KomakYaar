@@ -7,6 +7,7 @@ import random
 from telebot.asyncio_helper import ApiTelegramException
 from telebot import types
 import time
+import re
 
 load_dotenv()
 API_TOKEN = os.getenv("TOKEN")
@@ -14,16 +15,14 @@ BALE_TOKEN = os.getenv("BALE_TOKEN")
 DB_PATH = os.getenv("DB_PATH", "groups.db")
 SWEARS_PATH = os.getenv("SWEARS_PATH", "swears.txt")
 OWNER_ID = int(os.getenv("OWNER_ID"))
-VERSION = "2.5.4"
+VERSION = "2.6.4"
 BOT_CHANNEL = "@KomakYaaar"
 BOT_GROUP = "@KomakYaarGap"
 
 RUDE_ADMIN_MESSAGES = [
     "داداش تو ادمینی؟ برو باباتو ادمین کن بعد بیا اینجا حرف بزن 😏",
     "اخه تو ادمینی؟ گمشو پی کارت، اینجا جای بزرگتراست",
-    "تو که حتی ادمین کانالت نیستی، الان ادمین گروهم شدی؟ خخخخ",
     "عزیزم برو اول خودتو ادمین کن، بعد بیا دستور بده",
-    "مگه مامانت ادمینه که تو ادمینی؟ 😂 برو گمشو",
     "ادمین؟ تو؟ خخخخخ، شوخی نکن داداش، دلم سوخت",
     "برو بابا، ادمین نیستی، فقط داری وقت ما رو تلف می‌کنی",
     "تو ادمینی؟ آره آره، منم شاه ایرانم، گمشو لاشی",
@@ -32,7 +31,12 @@ RUDE_ADMIN_MESSAGES = [
     "توکی باشی که اینارو برا من تنظیم کنی",
     "لطفا تا ادمین نشدی گوه نخور",
     "آخه تو ادمینی؟",
-    "به علت حماقت این فرد نادان و انگشت کردن در دستور ادمینی همه ی اعضای گروه تبدیل به بهنام تشکر شدند، برای دفع این حمله به فرستنده دستور فحش رکیک بدهید"
+    "به علت حماقت این فرد نادان و انگشت کردن در دستور ادمینی همه ی اعضای گروه تبدیل به بهنام تشکر شدند، برای دفع این حمله به فرستنده دستور فحش رکیک بدهید",
+    "داداش ادمین؟ تو هنوز تو گروه خانوادگی‌ت ادمین نیستی، اینجا چه جاکاری؟ 😂",
+    "لطفا ادمین واقعی بیاد، این یکی فقط داره خنده‌مون می‌گیره",
+    "تو ادمینی؟ آره آره، منم امشب ناسا رو هک کردم",
+    "ادمین نیستی کونی",
+    "برو عامو سگ محلتون بهت محل نمیده من چرا باید به حرف تو گوش کنم یه ادمین بیاد لطفا"
 ]
 
 HELP_TEXT = """🤖 **راهنمای جامع ربات کمک‌یار**
@@ -66,6 +70,29 @@ def convert_digit(text: str) -> str:
     
     translation_table = str.maketrans(persian_arabic_digits, english_digits)
     return int(text.translate(translation_table))
+
+import re
+
+def parse_strip(text: str) -> str:
+    """
+    Safely cleans Markdown for Telegram while preserving usernames and normal underscores.
+    """
+    if not text:
+        return ""
+
+    text = re.sub(r'\[([^\]]+?)\]\s*\(\s*([^)]*?)(?=$|\s|\n)', r'\1', text)
+    text = re.sub(r'\*\*([^*]+?)(?=\*\*|$)', r'\1', text)
+    text = re.sub(r'__([^_]+?)(?=__|$)', r'\1', text)
+    text = re.sub(r'(?<![\*_])(\*)([^*\n]+?)(?=\*|$)', r'\2', text)
+    text = re.sub(r'`([^`\n]+?)(?=`|$)', r'\1', text)
+    text = re.sub(r'([*[\]`])', r'\\\1', text)
+    text = re.sub(r'(?<!\w)_(?!\w)', r'\_', text)
+
+
+    if len(text) > 4096:
+        text = text[:4093] + "..."
+
+    return text
 
 async def send_error_to_owner(error_text, owner_id, bot, error_type="ERROR"):
     """Send error details to bot owner"""
