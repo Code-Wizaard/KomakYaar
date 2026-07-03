@@ -71,23 +71,22 @@ def convert_digit(text: str) -> str:
     translation_table = str.maketrans(persian_arabic_digits, english_digits)
     return int(text.translate(translation_table))
 
-import re
 
 def parse_strip(text: str) -> str:
     """
-    Safely cleans Markdown for Telegram while preserving usernames and normal underscores.
+    Stronger Markdown sanitizer for Telegram.
     """
     if not text:
         return ""
 
-    text = re.sub(r'\[([^\]]+?)\]\s*\(\s*([^)]*?)(?=$|\s|\n)', r'\1', text)
-    text = re.sub(r'\*\*([^*]+?)(?=\*\*|$)', r'\1', text)
-    text = re.sub(r'__([^_]+?)(?=__|$)', r'\1', text)
-    text = re.sub(r'(?<![\*_])(\*)([^*\n]+?)(?=\*|$)', r'\2', text)
-    text = re.sub(r'`([^`\n]+?)(?=`|$)', r'\1', text)
-    text = re.sub(r'([*[\]`])', r'\\\1', text)
-    text = re.sub(r'(?<!\w)_(?!\w)', r'\_', text)
 
+    text = re.sub(r'\[([^\]]+?)\]\s*\(\s*([^)]*?)(?=$|\s|\n)', r'\1', text)   # broken links
+    text = re.sub(r'\*\*([^*]+?)(?=\*\*|$)', r'\1', text)                     # **bold
+    text = re.sub(r'__([^_]+?)(?=__|$)', r'\1', text)                         # __underline
+    text = re.sub(r'(?<![\*_])(\*)([^*\n]+?)(?=\*|$)', r'\2', text)           # *italic
+    text = re.sub(r'`([^`\n]+?)(?=`|$)', r'\1', text)                         # `code`
+    text = re.sub(r'([_*[\]`])', r'\\\1', text)
+    text = re.sub(r'(?<!@[\w])_(?!\w)', r'\_', text)
 
     if len(text) > 4096:
         text = text[:4093] + "..."

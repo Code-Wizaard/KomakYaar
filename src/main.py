@@ -7,7 +7,7 @@ import time
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 from pyrobale import Client
-from pyrobale.objects import Message, InputFile
+from pyrobale.objects import Message, InputFile, User
 from pyrobale.objects.enums import ChatType
 import logging
 import json
@@ -27,6 +27,7 @@ class KomakYaar():
         self.bot = AsyncTeleBot(API_TOKEN)
         self.me = asyncio.run(self.bot.get_me())
         self.bale_bot = Client(BALE_TOKEN)
+        self.bale_bot_me: User = self.bale_bot.get_me()
         # Main help keyboard - categorized
         self.help_keyboard = types.InlineKeyboardMarkup(row_width=2)
         self.help_keyboard.add(
@@ -968,7 +969,7 @@ https://github.com/Code-Wizaard/KomakYaar
                             
                             "**تنظیم پل از تلگرام به بله:**\n"
                             "1. ربات را به عنوان ادمین در **کانال تلگرام** و **کانال بله** اضافه کنید.\n"
-                            f"آیدی ربات در بله : https://ble.ir/{await self.bale_bot.get_me().username}\n"
+                            f"آیدی ربات در بله : [@{self.bale_bot_me.username}](https://ble.ir/{self.bale_bot_me.username})\n"
                             "2. در کانال بله دستور `/getid` را ارسال کنید تا آیدی کانال بله را بگیرید.\n"
                             "3. در **کانال تلگرام** دستور زیر را ارسال کنید:\n"
                             "`/setbridge آیدی_کانال_بله`\n\n"
