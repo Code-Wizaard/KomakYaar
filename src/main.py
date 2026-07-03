@@ -1491,6 +1491,14 @@ https://github.com/Code-Wizaard/KomakYaar
                         swears.append(word)
 
                 if int(await self.db.get_group_setting(chat_id, "SWEAR_LOCK", 0)) == 1:
+                    with open(SWEARS_PATH) as f:
+                        banned_words = {line.strip() for line in f}
+
+                    for word in text.split(" "):
+                        word = word.strip("‌")
+                        word = word.replace("‌", "")
+                        if word in banned_words:
+                            swears.append(word)
                     is_swear_flag, accuracy = self.profanity_detector.is_swear(text)
 
                     if is_swear_flag and accuracy >= 0.75:
