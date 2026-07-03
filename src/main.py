@@ -18,6 +18,7 @@ import base64
 import hashlib
 from cryptography.fernet import Fernet
 from anti_spam import AntiSpam
+from profanity_checker import ProfanityDetector
 import aiohttp
 from io import BytesIO
 logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
@@ -59,6 +60,7 @@ class KomakYaar():
         )
         self.db = DataBase(self.bot)
         self.anti_spam = AntiSpam(self.db)
+        self.profanity_detector = ProfanityDetector()
         self.setup_events()
     
        
@@ -1394,6 +1396,7 @@ https://github.com/Code-Wizaard/KomakYaar
                 comment_channel = message.reply_to_message
                 file = open(SWEARS_PATH, "r")
                 swears = []
+                is_swear = False
 
                 
                 if await self.db.is_group_blocked(chat_id):
@@ -1488,27 +1491,27 @@ https://github.com/Code-Wizaard/KomakYaar
                         swears.append(word)
 
                 if int(await self.db.get_group_setting(chat_id, "SWEAR_LOCK", 0)) == 1:
-                    with open(SWEARS_PATH) as f:
-                        banned_words = {line.strip() for line in f}
+                    is_swear_flag, accuracy = self.profanity_detector.is_swear(text)
 
-                    for word in text.split(" "):
-                        word = word.strip("‌")
-                        word = word.replace("‌", "")
-                        if word in banned_words:
-                            swears.append(word)
+                    if is_swear_flag and accuracy >= 0.75:
+                        is_swear = True
+                        swears.append("swear detected by model")
 
-                if not len(swears) == 0:
 
-                    for swear in swears:
-                        pattern = re.compile(re.escape(swear), re.IGNORECASE)
-                        text = pattern.sub(r"\*" * len(swear), text)
+                if (not len(swears) == 0) or is_swear:
 
-                    if await self.db.is_admin(chat_id, message.from_user.id):
-                        return
-                    markup = types.InlineKeyboardMarkup()
-                    check_button = types.InlineKeyboardButton("نمایش کلمه", callback_data=f"swear:{repr(swears)}")
-                    markup.add(check_button)
-                    await self.bot.reply_to(comment_channel if is_comment else message, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم \n\n متن سانسور شده :\n >> {text}", parse_mode="Markdown", reply_markup=markup)
+                    # for swear in swears:
+                    #     pattern = re.compile(re.escape(swear), re.IGNORECASE)
+                    #     text = pattern.sub(r"\*" * len(swear), text)
+
+                    # if await self.db.is_admin(chat_id, message.from_user.id):
+                    #     return
+                    # markup = types.InlineKeyboardMarkup()
+                    # check_button = types.InlineKeyboardButton("نمایش کلمه", callback_data=f"swear:{repr(swears)}")
+                    # markup.add(check_button)
+                    #  \n\n متن سانسور شده :\n >> {text}
+                    # , reply_markup=markup
+                    await self.bot.reply_to(comment_channel if is_comment else message, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم", parse_mode="Markdown")
                     await self.bot.delete_message(chat_id, message.message_id)
 
                 if text.startswith("db:"):
