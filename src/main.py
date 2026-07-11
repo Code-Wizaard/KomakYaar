@@ -234,7 +234,7 @@ class KomakYaar():
         async def lock_panel(message: types.Message):
             reply_to = message.reply_to_message
             is_comment = False
-            lock_keyboard = types.InlineKeyboardMarkup(row_width=1)
+            lock_keyboard = types.InlineKeyboardMarkup(row_width=2)
             lock_keyboard.add(
                 types.InlineKeyboardButton("قفل لینک ✅" if int(await self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل فوروارد ✅" if int(await self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
@@ -242,7 +242,8 @@ class KomakYaar():
                 types.InlineKeyboardButton("قفل گروه ✅" if int(await self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
                 types.InlineKeyboardButton("قفل اسپم ✅" if int(await self.db.get_group_setting(message.chat.id, "SPAM_LOCK", 0)) == 1 else "قفل اسپم ❌", callback_data="lock_spam:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "SPAM_LOCK", 0)) == 1 else "on")),
-                types.InlineKeyboardButton("قفل فلاد ✅" if int(await self.db.get_group_setting(message.chat.id, "FLOOD_LOCK", 0)) == 1 else "قفل فلاد ❌", callback_data="lock_flood:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "FLOOD_LOCK", 0)) == 1 else "on"))
+                types.InlineKeyboardButton("قفل فلاد ✅" if int(await self.db.get_group_setting(message.chat.id, "FLOOD_LOCK", 0)) == 1 else "قفل فلاد ❌", callback_data="lock_flood:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "FLOOD_LOCK", 0)) == 1 else "on")),
+                types.InlineKeyboardButton("قفل اینلاین ✅" if int(await self.db.get_group_setting(message.chat.id, "INLINE_LOCK", 0)) == 1 else "قفل اینلاین ❌", callback_data="lock_inline:"+ ("off" if int(await self.db.get_group_setting(message.chat.id, "INLINE_LOCK", 0)) == 1 else "on"))
             )
             while reply_to:
                 if reply_to.is_automatic_forward:
@@ -405,6 +406,29 @@ class KomakYaar():
                 await self.bot.reply_to(message, 
                     "✅ قفل فلود غیرفعال شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 
                     else "قفل فلود خاموش شد")
+                
+        @self.bot.message_handler(func=lambda m: m.text == "قفل اینلاین")
+        @check(require_admin=True)
+        async def inline_lock_on(message: types.Message):
+            if int(await self.db.get_group_setting(message.chat.id, "INLINE_LOCK", 0)) == 1:
+                await self.bot.reply_to(message,
+                    "قفل اینلاین از قبل فعال بوده" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "قفل اینلاین رو که قبلا روشن کرده بودی کصخل الزایمری"
+                )
+            else:
+                await self.db.set_group_setting(message.chat.id, "INLINE_LOCK", 1)
+                await self.bot.reply_to(message, "قفل اینلاین غیرفعال شد ✅")
+        
+        @self.bot.message_handler(func=lambda m: m.text == "بازکردن اینلاین")
+        @check(require_admin=True)
+        async def inline_lock_off(message: types.Message):
+            if int(await self.db.get_group_setting(message.chat.id, "INLINE_LOCK", 0)) == 0:
+                await self.bot.reply_to(message,
+                    "قفل اینلاین از قبل غیرفعال بوده" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اقا من بعنوان برنامه نویس ناموسا خسته شدم دیگه مغزم نمیکشه چی بنویسم کصخل نباشید دیگه غیرفعال بوده از قبل")
+            else:
+                await self.db.set_group_setting(message.chat.id, "INLINE_LOCK", 0)
+                await self.bot.reply_to(message,
+                    "قفل اینلاین غیرفعال شد ✅")
+                
 
         @self.bot.message_handler(func=lambda m: m.text == "درخواست کمک")
         @check(require_admin=True)
@@ -444,16 +468,24 @@ class KomakYaar():
         @self.bot.message_handler(func=lambda m: m.text == "لینک")
         @check(require_admin=False)
         async def create_invite_link(message):
-            lnk = await self.bot.create_chat_invite_link(
-                chat_id=message.chat.id,
-                name=f"Link by {message.from_user.first_name}",
-                member_limit=int(await self.db.get_group_setting(message.chat.id, "invite_maximum", 0)),
-                creates_join_request=bool(int(await self.db.get_group_setting(message.chat.id, "creates_request", 0)))
-            )
-            await self.bot.reply_to(
-                message,
-                f"🔗 لینک دعوت مخصوص شما:\n{lnk.invite_link}\n📌 ساخته شده توسط کمک‌یـــار"
-            )
+            try:
+                lnk = await self.bot.create_chat_invite_link(
+                    chat_id=message.chat.id,
+                    name=f"Link by {message.from_user.first_name}",
+                    member_limit=int(await self.db.get_group_setting(message.chat.id, "invite_maximum", 0)),
+                    creates_join_request=bool(int(await self.db.get_group_setting(message.chat.id, "creates_request", 0)))
+                )
+                await self.bot.reply_to(
+                    message,
+                    f"🔗 لینک دعوت مخصوص شما:\n{lnk.invite_link}\n📌 ساخته شده توسط کمک‌یـــار"
+                )
+            except:
+                await self.bot.reply_to(
+                    message,
+                    "ربات دسترسی ساخت لینک ندارد"
+                )
+
+            
 
         @self.bot.message_handler(func=lambda m: m.text == "فیلترها")
         @check(require_admin=False)
@@ -490,7 +522,7 @@ class KomakYaar():
 
         @self.bot.message_handler(func=lambda m: m.text == "قوانین")
         async def show_group_rules(message):
-            await self.bot.reply_to(message, f"قوانین گروه :\n {await self.db.get_group_rules(message.chat.id) or "قانونی برای این گروه ثبت نشده!"}")
+            await self.bot.reply_to(message, f"{await self.db.get_group_rules(message.chat.id) or "قانونی برای این گروه ثبت نشده!"}")
 
 
 
@@ -569,6 +601,8 @@ https://github.com/Code-Wizaard/KomakYaar
                         elif target_username == self.me.username:
                             await self.bot.answer_inline_query(inline_query.id, [], cache_time=0, switch_pm_text="شما نمی‌توانید به خود ربات پیام دهید", switch_pm_parameter="invalid_target")
                             return
+                        elif len(message_text) > 200:
+                            await self.bot.answer_inline_query(inline_query.id, [], cache_time=0, switch_pm_text="پیام بسیار طولانی است! محدودیت کاراکتر ارسال نجوا ۲۰۰ کاراکتر")
 
                         target = "@" + target_username
                         target_chat = None
@@ -585,7 +619,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         
 
                         result_send = types.InlineQueryResultArticle(
-                            id=f"send:{token}",
+                            id=f"wh:{token}",
                             title=f"ارسال پیام به {target}",
                             description=f"پیام شما:\n{message_text[:40] if len(message_text) > 40 else message_text}\n\nبرای ارسال این پیام به {target}، روی این پیام کلیک کنید.",
                             input_message_content=types.InputTextMessageContent(
@@ -603,7 +637,7 @@ https://github.com/Code-Wizaard/KomakYaar
             query = inline_result.query
             result_id = inline_result.result_id
 
-            if result_id != "help":
+            if result_id.startswith("wh:"):
             
                 token = result_id.split(":", 1)[1]
                 infos = token.split("#")[1]
@@ -678,10 +712,11 @@ https://github.com/Code-Wizaard/KomakYaar
                         "group": "گروه",
                         "gif": "گیف",
                         "spam": "اسپم",
-                        "flood": "فلاد"
+                        "flood": "فلاد",
+                        "inline": "اینلاین"
                     }
                     await self.bot.answer_callback_query(call.id, f"{locks.get(setting, setting)} با موفقیت {'قفل' if toggle == 'on' else 'باز'} شد" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه ستون {locks.get(setting, setting)} رو {'قفل' if toggle == 'on' else 'باز'} کردم", show_alert=True)
-                    lock_keyboard = types.InlineKeyboardMarkup(row_width=1)
+                    lock_keyboard = types.InlineKeyboardMarkup(row_width=2)
                     lock_keyboard.add(
                         types.InlineKeyboardButton("قفل لینک ✅" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل فوروارد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
@@ -689,7 +724,8 @@ https://github.com/Code-Wizaard/KomakYaar
                         types.InlineKeyboardButton("قفل گروه ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل اسپم ✅" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "قفل اسپم ❌", callback_data="lock_spam:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل فلاد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "قفل فلاد ❌", callback_data="lock_flood:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "on"))
+                        types.InlineKeyboardButton("قفل فلاد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "قفل فلاد ❌", callback_data="lock_flood:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل اینلاین ✅" if int(await self.db.get_group_setting(call.message.chat.id, "INLINE_LOCK", 0)) == 1 else "قفل اینلاین ❌", callback_data="lock_inline:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "INLINE_LOCK", 0)) == 1 else "on"))
                     )
                     while reply_to:
                         if reply_to.is_automatic_forward:
@@ -735,7 +771,7 @@ https://github.com/Code-Wizaard/KomakYaar
                     else:
                         await self.db.unlock_post(chat_id, post_id)
                     await self.bot.answer_callback_query(call.id, f"قفل پست با موفقیت {"فعال" if status == "lock" else "غیرفعال"} شد ✅", show_alert=True)
-                    lock_keyboard = types.InlineKeyboardMarkup(row_width=1)
+                    lock_keyboard = types.InlineKeyboardMarkup(row_width=2)
                     lock_keyboard.add(
                         types.InlineKeyboardButton("قفل لینک ✅" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل فوروارد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
@@ -743,7 +779,8 @@ https://github.com/Code-Wizaard/KomakYaar
                         types.InlineKeyboardButton("قفل گروه ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
                         types.InlineKeyboardButton("قفل اسپم ✅" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "قفل اسپم ❌", callback_data="lock_spam:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل فلاد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "قفل فلاد ❌", callback_data="lock_flood:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "on"))
+                        types.InlineKeyboardButton("قفل فلاد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "قفل فلاد ❌", callback_data="lock_flood:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل اینلاین ✅" if int(await self.db.get_group_setting(call.message.chat.id, "INLINE_LOCK", 0)) == 1 else "قفل اینلاین ❌", callback_data="lock_inline:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "INLINE_LOCK", 0)) == 1 else "on"))
                     )
                     
                     if is_comment:
@@ -758,8 +795,12 @@ https://github.com/Code-Wizaard/KomakYaar
 
 
                 elif data == "close_lock_panel":
-                    await self.bot.set_message_reaction(call.message.chat.id, call.message.message_id, [types.ReactionTypeEmoji('👍')])
-                    await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+                    admin = await self.db.is_admin(call.message.chat.id, call.message.from_user.id)
+                    if admin:
+                        await self.bot.edit_message_text("پنل به دستور مدیر بسته شد!", call.message.chat.id, call.message.message_id)
+                        await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+                    else:
+                        await self.bot.answer_callback_query(call.id, "ادمین نیستی!")
 
                 elif data.startswith("warn_punish:"):
                     punish_type = data.split(":")[1]
@@ -1622,7 +1663,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         markup.add(check_button)
                         markup.add(message_btn)
                         for admin in admins:
-                            if not admin.user.is_bot and admin.user.id != await self.bot.get_me().id:
+                            if not admin.user.is_bot and admin.user.id != self.me.id:
                                 try:
                                     await self.bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر [{message.from_user.first_name}](tg://user?id={user_id}) در گروه با ایدی {chat_id}\n فرد گزارش شده : [{target.first_name}](tg://user?id={target_id})\n متن پیام ارسالی :\n > {message.reply_to_message.text}", reply_markup=markup, parse_mode="Markdown")
                                 except:
