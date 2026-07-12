@@ -64,11 +64,12 @@ class KomakYaar():
         self.setup_events()
     
     async def apply_group_permissions(self, chat_id):
-        """Apply comprehensive permissions based on all locks"""
+        """Apply full permissions to the group based on its settings"""
         try:
             group_locked = bool(int(await self.db.get_group_setting(chat_id, "GROUP_LOCK", 0)))
             gif_locked = bool(int(await self.db.get_group_setting(chat_id, "GIF_LOCK", 0)))
-                
+            inline_locked = bool(int(await self.db.get_group_setting(chat_id, "INLINE_LOCK", 0)))
+            
             permissions = types.ChatPermissions(
                 can_send_messages=not group_locked,
                 can_send_photos=not group_locked,
@@ -80,6 +81,7 @@ class KomakYaar():
                 can_send_voices=not group_locked,
                 can_send_video_notes=not group_locked,
                 can_send_polls=not group_locked,
+                can_send_other_messages=not (group_locked or inline_locked),
             )
             await self.bot.set_chat_permissions(chat_id, permissions)
         except Exception as e:
