@@ -716,37 +716,42 @@ https://github.com/Code-Wizaard/KomakYaar
                     if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
                         await self.bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
                         return
+                    
                     reply_to = call.message.reply_to_message
                     is_comment = False
                     setting = data.split(":")[0].split("_")[1]
                     toggle = data.split(":")[1]
-                    current_value = await self.db.get_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 0)
+                    
+                    current_value = int(await self.db.get_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 0))
                     if (current_value == 1 and toggle == "on") or (current_value == 0 and toggle == "off"):
                         await self.bot.answer_callback_query(call.id, "این ویژگی از قبل نیز در همین وضعیت بود" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "همینطوریشم همینه ستونم")
                         return
+                    
+                    await self.db.set_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 1 if toggle == "on" else 0)
                     await self.apply_group_permissions(call.message.chat.id)
+                    
+                    
                     locks = {
-                        "swear": "فحش",
-                        "link": "لینک",
-                        "forward": "فوروارد",
-                        "group": "گروه",
-                        "gif": "گیف",
-                        "spam": "اسپم",
-                        "flood": "فلاد",
-                        "inline": "اینلاین"
+                        "swear": "فحش", "link": "لینک", "forward": "فوروارد", "group": "گروه",
+                        "gif": "گیف", "spam": "اسپم", "flood": "فلاد", "inline": "اینلاین"
                     }
-                    await self.bot.answer_callback_query(call.id, f"{locks.get(setting, setting)} با موفقیت {'قفل' if toggle == 'on' else 'باز'} شد" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه ستون {locks.get(setting, setting)} رو {'قفل' if toggle == 'on' else 'باز'} کردم", show_alert=True)
+                    status_text = f"{locks.get(setting, setting)} با موفقیت {'قفل' if toggle == 'on' else 'باز'} شد"
+                    await self.bot.answer_callback_query(call.id, status_text if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه ستون {locks.get(setting, setting)} رو {'قفل' if toggle == 'on' else 'باز'} کردم", show_alert=True)
+                    
+                    
                     lock_keyboard = types.InlineKeyboardMarkup(row_width=2)
                     lock_keyboard.add(
-                        types.InlineKeyboardButton("قفل لینک ✅" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل فوروارد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل فحش ✅" if int(await self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل گروه ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل اسپم ✅" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "قفل اسپم ❌", callback_data="lock_spam:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل فلاد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "قفل فلاد ❌", callback_data="lock_flood:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "on")),
-                        types.InlineKeyboardButton("قفل اینلاین ✅" if int(await self.db.get_group_setting(call.message.chat.id, "INLINE_LOCK", 0)) == 1 else "قفل اینلاین ❌", callback_data="lock_inline:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "INLINE_LOCK", 0)) == 1 else "on"))
+                        types.InlineKeyboardButton("قفل لینک ✅" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:" + ("off" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل فوروارد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "قفل فوروارد ❌", callback_data="lock_forward:" + ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FORWARD_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل فحش ✅" if int(await self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "قفل فحش ❌", callback_data="lock_swear:" + ("off" if int(await self.db.get_group_setting(call.message.chat.id, "SWEAR_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل گروه ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "قفل گروه ❌", callback_data="lock_group:" + ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل گیف ✅" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "قفل گیف ❌", callback_data="lock_gif:" + ("off" if int(await self.db.get_group_setting(call.message.chat.id, "GIF_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل اسپم ✅" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "قفل اسپم ❌", callback_data="lock_spam:" + ("off" if int(await self.db.get_group_setting(call.message.chat.id, "SPAM_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل فلاد ✅" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "قفل فلاد ❌", callback_data="lock_flood:" + ("off" if int(await self.db.get_group_setting(call.message.chat.id, "FLOOD_LOCK", 0)) == 1 else "on")),
+                        types.InlineKeyboardButton("قفل اینلاین ✅" if int(await self.db.get_group_setting(call.message.chat.id, "INLINE_LOCK", 0)) == 1 else "قفل اینلاین ❌", callback_data="lock_inline:" + ("off" if int(await self.db.get_group_setting(call.message.chat.id, "INLINE_LOCK", 0)) == 1 else "on"))
                     )
+                    
+
                     while reply_to:
                         if reply_to.is_automatic_forward:
                             is_comment = True
@@ -760,11 +765,11 @@ https://github.com/Code-Wizaard/KomakYaar
                     if is_comment:
                         post_lock = await self.db.post_lock_status(call.message.chat.id, reply_to.message_id)
                         lock_keyboard.add(
-                            types.InlineKeyboardButton("قفل پست ✅" if post_lock else "قفل پست ❌", callback_data="post_" + "lock" if not post_lock else "unlock")
+                            types.InlineKeyboardButton("قفل پست ✅" if post_lock else "قفل پست ❌", callback_data="post_" + ("lock" if not post_lock else "unlock"))
                         )
-                    lock_keyboard.add(
-                        types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel")
-                    )
+                    
+                    lock_keyboard.add(types.InlineKeyboardButton("بستن پنل قفل", callback_data="close_lock_panel"))
+                    
                     await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=lock_keyboard)
 
                 elif data.startswith("post_"):
