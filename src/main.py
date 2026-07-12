@@ -1501,6 +1501,10 @@ https://github.com/Code-Wizaard/KomakYaar
                             await self.bot.delete_message(chat_id, message.message_id)
 
                 if message.via_bot:
+                    lock = await self.db.get_group_setting(chat_id, "INLINE_LOCK", 0)
+                    if int(lock) == 1 and not await self.db.is_admin(chat_id, user_id):
+                        await self.bot.delete_message(chat_id, message.message_id)
+                        return
                     bot_username = message.via_bot.username
                     blocked_bots = await self.db.get_botBlocks(message.chat.id)
                     if bot_username in blocked_bots:
