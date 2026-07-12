@@ -416,7 +416,7 @@ class KomakYaar():
                 )
             else:
                 await self.db.set_group_setting(message.chat.id, "INLINE_LOCK", 1)
-                await self.bot.reply_to(message, "قفل اینلاین غیرفعال شد ✅")
+                await self.bot.reply_to(message, "قفل اینلاین فعال شد ✅")
         
         @self.bot.message_handler(func=lambda m: m.text == "بازکردن اینلاین")
         @check(require_admin=True)
