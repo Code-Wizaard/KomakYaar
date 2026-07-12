@@ -63,6 +63,27 @@ class KomakYaar():
         self.profanity_detector = ProfanityDetector()
         self.setup_events()
     
+    async def apply_group_permissions(self, chat_id):
+        """Apply comprehensive permissions based on all locks"""
+        try:
+            group_locked = bool(int(await self.db.get_group_setting(chat_id, "GROUP_LOCK", 0)))
+            gif_locked = bool(int(await self.db.get_group_setting(chat_id, "GIF_LOCK", 0)))
+                
+            permissions = types.ChatPermissions(
+                can_send_messages=not group_locked,
+                can_send_photos=not group_locked,
+                can_send_videos=not group_locked,
+                can_send_documents=not group_locked,
+                can_send_stickers=not group_locked,
+                can_send_animations=not (group_locked or gif_locked),
+                can_send_audios=not group_locked,
+                can_send_voices=not group_locked,
+                can_send_video_notes=not group_locked,
+                can_send_polls=not group_locked,
+            )
+            await self.bot.set_chat_permissions(chat_id, permissions)
+        except Exception as e:
+            print(f"Permission apply error: {e}")
        
     def setup_events(self):
         check = lambda require_admin=False: handler_check(self.bot, self.db, self.anti_spam, require_admin)
@@ -143,7 +164,7 @@ class KomakYaar():
             if int(await self.db.get_group_setting(message.chat.id, "GROUP_LOCK", 0)) == 0:
                 await self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 1)
                 await self.bot.reply_to(message, "گروه با موفقیت قفل شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "کسی خایه داره پیام بده")
-                await self.bot.set_chat_permissions(message.chat.id, types.ChatPermissions(can_send_animations=not bool(int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0))), can_send_messages=False))
+                await self.apply_group_permissions(message.chat.id)
             else:
                 await self.bot.reply_to(message, "گروه از قبل نیز قفل بود" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گروه که از قبل قفل بود کصخل")
 
@@ -155,7 +176,7 @@ class KomakYaar():
             else:
                 await self.db.set_group_setting(message.chat.id, "GROUP_LOCK", 0)
                 await self.bot.reply_to(message, "گروه با موفقیت باز شد" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "راحت گوه بخورید")
-                await self.bot.set_chat_permissions(message.chat.id, types.ChatPermissions(can_send_animations=not bool(int(await self.db.get_group_setting(message.chat.id, "GIF_LOCK", 0))), can_send_messages=True))
+                await self.apply_group_permissions(message.chat.id)
 
         @self.bot.message_handler(func=lambda m: m.text == "بی ادب شو")
         @check(require_admin=True)
@@ -703,8 +724,7 @@ https://github.com/Code-Wizaard/KomakYaar
                     if (current_value == 1 and toggle == "on") or (current_value == 0 and toggle == "off"):
                         await self.bot.answer_callback_query(call.id, "این ویژگی از قبل نیز در همین وضعیت بود" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "همینطوریشم همینه ستونم")
                         return
-                    await self.db.set_group_setting(call.message.chat.id, setting.upper() + "_LOCK", 1 if toggle == "on" else 0)
-                    await self.bot.set_chat_permissions(call.message.chat.id, types.ChatPermissions(can_send_messages=not bool(int(await self.db.get_group_setting(call.message.chat.id, "GROUP_LOCK", 0)))))
+                    await self.apply_group_permissions(call.message.chat.id)
                     locks = {
                         "swear": "فحش",
                         "link": "لینک",
