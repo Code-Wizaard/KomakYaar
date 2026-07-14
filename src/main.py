@@ -1794,6 +1794,9 @@ https://github.com/Code-Wizaard/KomakYaar
                         if await self.db.is_admin(chat_id, target_id):
                             await self.bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "حاجی بی شوخی خیلی کصخلی طرف ادمینه من اینو چیکارش کنم")
                             return
+                        if target_id == self.me.id:
+                            await self.bot.reply_to(message, "❌ نمی‌توانم خودم را سکوت کنم!" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "چرا انقدر همه با من بد هستند")
+                            return
                         parts = text.split()
                         if len(parts) >= 2 and parts[1].isdigit():
                             mins = int(parts[1])
@@ -1814,6 +1817,9 @@ https://github.com/Code-Wizaard/KomakYaar
                             return
                         if await self.db.is_admin(chat_id, target_id):
                             await self.bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اخه کصمغز چرا باید ادمینو اخطار بدم")
+                            return
+                        if target_id == self.me.id:
+                            await self.bot.reply_to(message, "❌ نمی‌توانم خودم را اخطار کنم!" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "به کدامین گناه؟")
                             return
                         await self.db.warn_user(chat_id, target_id)
                         warns = await self.db.get_user_warnings(chat_id, target_id)
@@ -1852,6 +1858,9 @@ https://github.com/Code-Wizaard/KomakYaar
                         if await self.db.is_admin(chat_id, target_id):
                             await self.bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "باشه داداش دوبار الان برات ادمینو کیک میکنم")
                             return
+                        if target_id == self.me.id:
+                            await self.bot.reply_to(message, "❌ نمی‌توانم خودم را کیک کنم!" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "حالا باهم یه چندتا شوخی کردیم چرا میخوای منو کیک کنی")
+                            return
                         await self.bot.ban_chat_member(chat_id, target_id)
                         await self.bot.unban_chat_member(chat_id, target_id)
                         await self.db.add_punishment(chat_id, target_id, "kick")
@@ -1865,6 +1874,9 @@ https://github.com/Code-Wizaard/KomakYaar
                         if await self.db.is_admin(chat_id, target_id):
                             await self.bot.reply_to(message, "دوست عزیز، فرد انتخاب شده ادمین است" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "پاول دوروفم نمیتونه ادمین بن کنه تو دیگه چه انتظاری داری")
                             return
+                        if target_id == self.me.id:
+                            await self.bot.reply_to(message, "❌ نمی‌توانم خودم را بن کنم!" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "عامو تفنگو بگیر اونور به من چیکار داری")
+                            return
                         await self.bot.ban_chat_member(chat_id, target_id)
                         await self.db.add_punishment(chat_id, target_id, "ban")
                         await self.bot.reply_to(message, "⛔ کاربر بن شد!")
@@ -1875,6 +1887,9 @@ https://github.com/Code-Wizaard/KomakYaar
                             return
                         if await self.db.is_admin(chat_id, target_id):
                             await self.bot.reply_to(message, "دوست عزیز، نمیتوانم ادمین هارا بن یا کیک کنم" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "سیشتیر بابا همتون همینو میگید")
+                            return
+                        if target_id == self.me.id:
+                            await self.bot.reply_to(message, "❌ نمی‌توانم خودم را بن کنم!" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "اگر انقدر از من بدت میاد بگو سیکتیر کن سیکتیر کنم")
                             return
                         await self.bot.delete_message(chat_id, message.message_id)
                         await self.bot.ban_chat_member(chat_id, target_id)
@@ -1887,19 +1902,15 @@ https://github.com/Code-Wizaard/KomakYaar
 
                     # UNMUTE
                     elif (text == "آن‌میوت" or text == "آن میوت" or text == "ان میوت") and await self.db.is_admin(chat_id, user_id):
+                        if target_id == self.me.id:
+                            await self.bot.reply_to(message, "❌ نمی‌توانم خودم را آن‌میوت کنم!" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "مشتی منکه میوت نیستم بخوام ان میوت شم")
+                            return
                         await self.bot.restrict_chat_member(
                             chat_id, 
                             target_id,
                             can_send_messages=True,
                             can_send_media_messages=True,
-                            can_send_photos=True,
-                            can_send_videos=True,
-                            can_send_documents=True,
-                            can_send_stickers=True,
-                            can_send_animations=True,
-                            can_send_audios=True,
-                            can_send_voices=True,
-                            can_send_video_notes=True,
+                            can_add_web_page_previews=True,
                             can_send_polls=True,
                             can_send_other_messages=True
                         )
