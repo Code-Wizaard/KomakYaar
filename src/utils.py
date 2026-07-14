@@ -96,7 +96,7 @@ def parse_strip(text: str) -> str:
 async def send_error_to_owner(error_text, owner_id, bot, error_type="ERROR"):
     """Send error details to bot owner"""
     try:
-        error_message = f"""🚨 **{error_type}**
+        error_message = f"""🚨 **{parse_strip(error_type)}**
 
 ⏰ {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
@@ -147,12 +147,19 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                         except:
                             pass
                         anti_spam.reset_user(chat_id, user_id)
-                        await bot.send_message(
-                            chat_id,
-                            f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇",
-                            parse_mode="Markdown"
-                        )
-                        return
+                        if not await db.is_admin(chat_id, user_id):
+                            await bot.send_message(
+                                chat_id,
+                                f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇",
+                                parse_mode="Markdown"
+                            )
+                            return
+                        else:
+                            await bot.send_message(
+                                chat_id,
+                                f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم",
+                                parse_mode="Markdown"
+                            )
 
                 # چک ادمین
                 if require_admin:

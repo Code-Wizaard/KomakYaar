@@ -738,7 +738,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         "gif": "گیف", "spam": "اسپم", "flood": "فلاد", "inline": "اینلاین"
                     }
                     status_text = f"{locks.get(setting, setting)} با موفقیت {'قفل' if toggle == 'on' else 'باز'} شد"
-                    await self.bot.answer_callback_query(call.id, status_text if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه ستون {locks.get(setting, setting)} رو {'قفل' if toggle == 'on' else 'باز'} کردم", show_alert=True)
+                    await self.bot.answer_callback_query(call.id, status_text if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه ستون {locks.get(setting, setting)} رو {'قفل' if toggle == 'on' else 'باز'} کردم")
                     
                     
                     lock_keyboard = types.InlineKeyboardMarkup(row_width=2)
@@ -797,7 +797,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         await self.db.lock_post(chat_id, post_id)
                     else:
                         await self.db.unlock_post(chat_id, post_id)
-                    await self.bot.answer_callback_query(call.id, f"قفل پست با موفقیت {"فعال" if status == "lock" else "غیرفعال"} شد ✅", show_alert=True)
+                    await self.bot.answer_callback_query(call.id, f"قفل پست با موفقیت {"فعال" if status == "lock" else "غیرفعال"} شد ✅")
                     lock_keyboard = types.InlineKeyboardMarkup(row_width=2)
                     lock_keyboard.add(
                         types.InlineKeyboardButton("قفل لینک ✅" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
@@ -822,12 +822,11 @@ https://github.com/Code-Wizaard/KomakYaar
 
 
                 elif data == "close_lock_panel":
-                    admin = await self.db.is_admin(call.message.chat.id, call.message.from_user.id)
-                    if admin:
-                        await self.bot.edit_message_text("پنل به دستور مدیر بسته شد!", call.message.chat.id, call.message.message_id)
-                        await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
-                    else:
-                        await self.bot.answer_callback_query(call.id, "ادمین نیستی!")
+                    if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
+                        await self.bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
+                        return
+                    await self.bot.edit_message_text("پنل به دستور مدیر بسته شد!", call.message.chat.id, call.message.message_id)
+                    await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
                 elif data.startswith("warn_punish:"):
                     punish_type = data.split(":")[1]
@@ -1499,12 +1498,19 @@ https://github.com/Code-Wizaard/KomakYaar
                         except ApiTelegramException:
                             pass
                         self.anti_spam.reset_user(chat_id, user_id)
-                        await self.bot.send_message(
-                            chat_id,
-                            f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇",
-                            parse_mode="Markdown"
-                        )
-                        return
+                        if not await self.db.is_admin(chat_id, user_id):
+                            await self.bot.send_message(
+                                chat_id,
+                                f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇",
+                                parse_mode="Markdown"
+                            )
+                            return
+                        else:
+                            await self.bot.send_message(
+                                chat_id,
+                                f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم",
+                                parse_mode="Markdown"
+                            )
 
                 
                 while reply_to:
