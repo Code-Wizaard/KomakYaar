@@ -826,7 +826,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         await self.bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
                         return
                     await self.bot.edit_message_text("پنل به دستور مدیر بسته شد!", call.message.chat.id, call.message.message_id)
-                    await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+                    await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
 
                 elif data.startswith("warn_punish:"):
                     punish_type = data.split(":")[1]
@@ -878,7 +878,7 @@ https://github.com/Code-Wizaard/KomakYaar
                     rep_id = data.split(":")[1]
                     await self.db.check_report(rep_id)
                     await self.bot.answer_callback_query(call.id, "گزارش با موفقیت توسط شما بررسی شد")
-                    await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+                    await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
 
                 elif data.startswith("help_"):
                     help_contents = {
@@ -1887,8 +1887,22 @@ https://github.com/Code-Wizaard/KomakYaar
 
                     # UNMUTE
                     elif (text == "آن‌میوت" or text == "آن میوت" or text == "ان میوت") and await self.db.is_admin(chat_id, user_id):
-                        await self.bot.restrict_chat_member(chat_id, target_id,
-                                                can_send_messages=True, can_send_media_messages=True)
+                        await self.bot.restrict_chat_member(
+                            chat_id, 
+                            target_id,
+                            can_send_messages=True,
+                            can_send_media_messages=True,
+                            can_send_photos=True,
+                            can_send_videos=True,
+                            can_send_documents=True,
+                            can_send_stickers=True,
+                            can_send_animations=True,
+                            can_send_audios=True,
+                            can_send_voices=True,
+                            can_send_video_notes=True,
+                            can_send_polls=True,
+                            can_send_other_messages=True
+                        )
                         await self.db.remove_punishment(chat_id, target_id, "mute")
                         await self.bot.reply_to(message, "✅ کاربر آن‌میوت شد!")
 
