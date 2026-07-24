@@ -2,7 +2,7 @@ import joblib
 import re
 
 class ProfanityDetector:
-    def __init__(self, model_path='src/models/profanity_checker/profanity_model-2.1.pkl', vectorizer_path='src/models/profanity_checker/tfidf_vectorizer-1.0.pkl'):
+    def __init__(self, model_path='src/models/profanity_checker/profanity_model-2.1.pkl', vectorizer_path='src/models/profanity_checker/tfidf_vectorizer-2.1.pkl'):
         self.model = joblib.load(model_path)
         self.vectorizer = joblib.load(vectorizer_path)
 
