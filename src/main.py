@@ -488,7 +488,7 @@ class KomakYaar():
             else:
                 button_on = types.InlineKeyboardButton("روشن کردن", callback_data="request:on")
                 markup.add(button_on)
-            await self.bot.reply_to(message, f"از دکمه ی زیر برای تغییر وضعیت درخواست دعوت استفاده کنید \n وضعیت فعلی : {"روشن" if toggle else "خاموش"}", reply_markup=markup)
+            await self.bot.reply_to(message, f'از دکمه ی زیر برای تغییر وضعیت درخواست دعوت استفاده کنید \n وضعیت فعلی : {"روشن" if toggle else "خاموش"}', reply_markup=markup)
 
         @self.bot.message_handler(func=lambda m: m.text == "لینک")
         @check(require_admin=False)
@@ -527,9 +527,9 @@ class KomakYaar():
             warn_punish = await self.db.get_group_setting(message.chat.id, "WARN_PUNISHMENT", "kick")
             keyboard = types.InlineKeyboardMarkup()
             keyboard.add(
-                types.InlineKeyboardButton(f"کیک {"✅" if warn_punish == "kick" else "❌"}", callback_data="warn_punish:kick"),
-                types.InlineKeyboardButton(f"بن {"✅" if warn_punish == "ban" else "❌"}", callback_data="warn_punish:ban"),
-                types.InlineKeyboardButton(f"میوت {"✅" if warn_punish == "mute" else "❌"}", callback_data="warn_punish:mute")
+                types.InlineKeyboardButton(f'کیک {"✅" if warn_punish == "kick" else "❌"}', callback_data="warn_punish:kick"),
+                types.InlineKeyboardButton(f'بن {"✅" if warn_punish == "ban" else "❌"}', callback_data="warn_punish:ban"),
+                types.InlineKeyboardButton(f'میوت {"✅" if warn_punish == "mute" else "❌"}', callback_data="warn_punish:mute")
             )
             await self.bot.reply_to(message, "از دکمه‌های زیر برای انتخاب نوع مجازات استفاده کنید", reply_markup=keyboard)
 
@@ -547,7 +547,7 @@ class KomakYaar():
 
         @self.bot.message_handler(func=lambda m: m.text == "قوانین")
         async def show_group_rules(message):
-            await self.bot.reply_to(message, f"{await self.db.get_group_rules(message.chat.id) or "قانونی برای این گروه ثبت نشده!"}")
+            await self.bot.reply_to(message, f'{await self.db.get_group_rules(message.chat.id) or "قانونی برای این گروه ثبت نشده!"}')
 
 
 
@@ -799,7 +799,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         await self.db.lock_post(chat_id, post_id)
                     else:
                         await self.db.unlock_post(chat_id, post_id)
-                    await self.bot.answer_callback_query(call.id, f"قفل پست با موفقیت {"فعال" if status == "lock" else "غیرفعال"} شد ✅")
+                    await self.bot.answer_callback_query(call.id, f'قفل پست با موفقیت {"فعال" if status == "lock" else "غیرفعال"} شد ✅')
                     lock_keyboard = types.InlineKeyboardMarkup(row_width=2)
                     lock_keyboard.add(
                         types.InlineKeyboardButton("قفل لینک ✅" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "قفل لینک ❌", callback_data="lock_link:"+ ("off" if int(await self.db.get_group_setting(call.message.chat.id, "LINK_LOCK", 0)) == 1 else "on")),
@@ -874,7 +874,7 @@ https://github.com/Code-Wizaard/KomakYaar
 
                 elif data.startswith("swear:"):
                     array = data.split(":")[1]
-                    await self.bot.answer_callback_query(call.id, f"لیست فحش های :\n {" - ".join(eval(array))}")
+                    await self.bot.answer_callback_query(call.id, f'لیست فحش های :\n {" - ".join(eval(array))}')
 
                 elif data.startswith("check:"):
                     rep_id = data.split(":")[1]
@@ -1506,14 +1506,14 @@ https://github.com/Code-Wizaard/KomakYaar
                         if not await self.db.is_admin(chat_id, user_id):
                             await self.bot.send_message(
                                 chat_id,
-                                f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇",
+                                f'[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇',
                                 parse_mode="Markdown"
                             )
                             return
                         else:
                             await self.bot.send_message(
                                 chat_id,
-                                f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم",
+                                f'[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم',
                                 parse_mode="Markdown"
                             )
 

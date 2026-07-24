@@ -150,14 +150,14 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                         if not await db.is_admin(chat_id, user_id):
                             await bot.send_message(
                                 chat_id,
-                                f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇",
+                                f'[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇',
                                 parse_mode="Markdown"
                             )
                             return
                         else:
                             await bot.send_message(
                                 chat_id,
-                                f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم",
+                                f'[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم',
                                 parse_mode="Markdown"
                             )
 
@@ -194,10 +194,10 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
     return decorator
 
 if __name__ == "__main__":
-    print(f"API Token = {API_TOKEN if API_TOKEN else "no token"}")
-    print(f"DB Path = {DB_PATH}")
-    print(f"Swears file path = {SWEARS_PATH}")
-    print(f"Owner ID = {OWNER_ID if OWNER_ID else "no id"}")
-    print(f"Channel username of the bot = {BOT_CHANNEL if BOT_CHANNEL else "no channel"}")
-    print(f"Group username of the bot = {BOT_GROUP if BOT_GROUP else "no group"}")
-    print(f"Version = {VERSION}")
+    print(f'API Token = {API_TOKEN if API_TOKEN else "no token"}')
+    print(f'DB Path = {DB_PATH}')
+    print(f'Swears file path = {SWEARS_PATH}')
+    print(f'Owner ID = {OWNER_ID if OWNER_ID else "no id"}')
+    print(f'Channel username of the bot = {BOT_CHANNEL if BOT_CHANNEL else "no channel"}')
+    print(f'Group username of the bot = {BOT_GROUP if BOT_GROUP else "no group"}')
+    print(f'Version = {VERSION}')

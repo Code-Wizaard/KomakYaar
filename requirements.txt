@@ -6,3 +6,4 @@ cryptography
 aiosqlite
 scikit-learn
 xgboost
+joblib
