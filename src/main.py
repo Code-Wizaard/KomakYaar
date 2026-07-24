@@ -19,6 +19,7 @@ import hashlib
 from cryptography.fernet import Fernet
 from anti_spam import AntiSpam
 from profanity_checker import ProfanityDetector
+from anti_virus import AntiVirus
 import aiohttp
 from io import BytesIO
 logger = logging.getLogger('TeleBot').setLevel(logging.INFO)
@@ -60,6 +61,7 @@ class KomakYaar():
         )
         self.db = DataBase(self.bot)
         self.anti_spam = AntiSpam(self.db)
+        self.anti_virus = AntiVirus()
         self.profanity_detector = ProfanityDetector()
         self.setup_events()
     
@@ -1468,6 +1470,9 @@ https://github.com/Code-Wizaard/KomakYaar
                 
                 if await self.db.is_group_blocked(chat_id):
                     return
+
+                if not await self.db.is_group_active(chat_id):
+                    return
                 
                 if (int(await self.db.get_group_setting(chat_id, "SPAM_LOCK", 0)) == 1 or
                     int(await self.db.get_group_setting(chat_id, "FLOOD_LOCK", 0)) == 1):
@@ -1510,6 +1515,71 @@ https://github.com/Code-Wizaard/KomakYaar
                                 chat_id,
                                 f"[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم",
                                 parse_mode="Markdown"
+                            )
+
+                if message.document:
+                    await self.bot.set_message_reaction(
+                        chat_id, 
+                        message.message_id, 
+                        [types.ReactionTypeEmoji('🔍')]
+                    )
+
+                    file_name = message.document.file_name or ""
+                    file_size = message.document.file_size or 0
+                    ext = file_name.split('.')[-1].lower() if '.' in file_name else ""
+
+                    supported_exts = {
+                        'txt', 'py', 'js', 'html', 'css', 'json', 'xml', 
+                        'md', 'csv', 'log', 'sh', 'bat', 'ps1', 'php', 'java',
+                        'cs', 'cpp', 'c', 'h', 'hpp', 'rb', 'pl', 'go', 'rs',
+                    }
+
+                    if ext not in supported_exts and file_size > 500_000:
+                        await self.bot.set_message_reaction(
+                            chat_id, 
+                            message.message_id, 
+                            [types.ReactionTypeEmoji('❓')]  # Unsupported type
+                        )
+                    else:
+                        try:
+                            # Download file
+                            file_info = await self.bot.get_file(message.document.file_id)
+                            downloaded = await self.bot.download_file(file_info.file_path)
+                            
+                            # Try to read as text (fallback to empty if binary)
+                            try:
+                                content = downloaded.decode('utf-8', errors='ignore')
+                            except:
+                                content = str(downloaded)[:10000]  # fallback
+
+                            if content.strip():
+                                is_malware, prob = self.anti_virus.is_malware(content)
+                                
+                                if is_malware:
+                                    await self.bot.set_message_reaction(
+                                        chat_id, 
+                                        message.message_id, 
+                                        [types.ReactionTypeEmoji('🚫')]  # Malware detected
+                                    )
+                                else:
+                                    await self.bot.set_message_reaction(
+                                        chat_id, 
+                                        message.message_id, 
+                                        [types.ReactionTypeEmoji('✅')]  # Clean
+                                    )
+                            else:
+                                await self.bot.set_message_reaction(
+                                    chat_id, 
+                                    message.message_id, 
+                                    [types.ReactionTypeEmoji('⚠️')] # Not Sure
+                                )
+                        except Exception as e:
+                            error_text = f"handle_malwares: {str(e)}\n{traceback.format_exc()}"
+                            await send_error_to_owner(error_text, OWNER_ID, self.bot, "MAIN_ERROR")
+                            await self.bot.set_message_reaction(
+                                chat_id, 
+                                message.message_id, 
+                                [types.ReactionTypeEmoji('❌')] # ERR
                             )
 
                 
@@ -1569,14 +1639,14 @@ https://github.com/Code-Wizaard/KomakYaar
                         swears.append(word)
 
                 if int(await self.db.get_group_setting(chat_id, "SWEAR_LOCK", 0)) == 1:
-                    with open(SWEARS_PATH) as f:
-                        banned_words = {line.strip() for line in f}
+                    # with open(SWEARS_PATH) as f:
+                    #     banned_words = {line.strip() for line in f}
 
-                    for word in text.split(" "):
-                        word = word.strip("‌")
-                        word = word.replace("‌", "")
-                        if word in banned_words:
-                            swears.append(word)
+                    # for word in text.split(" "):
+                    #     word = word.strip("‌")
+                    #     word = word.replace("‌", "")
+                    #     if word in banned_words:
+                    #         swears.append(word)
                     is_swear_flag, accuracy = self.profanity_detector.is_swear(text)
 
                     if is_swear_flag and accuracy >= 0.75:
@@ -1606,8 +1676,6 @@ https://github.com/Code-Wizaard/KomakYaar
                 if text == "کمک یار" or text == "کمک‌یار":
                     await self.bot.reply_to(message, f"{message.from_user.first_name}")
 
-                if not await self.db.is_group_active(chat_id):
-                    return
 
                 tags = await self.db.get_tags(chat_id)
                 for k, r in tags.items():

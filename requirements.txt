@@ -4,4 +4,4 @@ python-dotenv
 requests
 cryptography
 aiosqlite
-scikit-learn
+joblib
