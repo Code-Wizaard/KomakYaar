@@ -1521,7 +1521,7 @@ https://github.com/Code-Wizaard/KomakYaar
                     await self.bot.set_message_reaction(
                         chat_id, 
                         message.message_id, 
-                        [types.ReactionTypeEmoji('🔍')]
+                        [types.ReactionTypeEmoji('🤔')]
                     )
 
                     file_name = message.document.file_name or ""
@@ -1538,7 +1538,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         await self.bot.set_message_reaction(
                             chat_id, 
                             message.message_id, 
-                            [types.ReactionTypeEmoji('❓')]  # Unsupported type
+                            [types.ReactionTypeEmoji('🥴')]  # Unsupported type
                         )
                     else:
                         try:
@@ -1559,19 +1559,19 @@ https://github.com/Code-Wizaard/KomakYaar
                                     await self.bot.set_message_reaction(
                                         chat_id, 
                                         message.message_id, 
-                                        [types.ReactionTypeEmoji('🚫')]  # Malware detected
+                                        [types.ReactionTypeEmoji('👎')]  # Malware detected
                                     )
                                 else:
                                     await self.bot.set_message_reaction(
                                         chat_id, 
                                         message.message_id, 
-                                        [types.ReactionTypeEmoji('✅')]  # Clean
+                                        [types.ReactionTypeEmoji('👍')]  # Clean
                                     )
                             else:
                                 await self.bot.set_message_reaction(
                                     chat_id, 
                                     message.message_id, 
-                                    [types.ReactionTypeEmoji('⚠️')] # Not Sure
+                                    [types.ReactionTypeEmoji('🤷‍♂️')] # Not Sure
                                 )
                         except Exception as e:
                             error_text = f"handle_malwares: {str(e)}\n{traceback.format_exc()}"
