@@ -5,3 +5,4 @@ requests
 cryptography
 aiosqlite
 scikit-learn
+xgboost
