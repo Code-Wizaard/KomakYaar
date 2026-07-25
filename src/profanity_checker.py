@@ -16,7 +16,7 @@ class ProfanityDetector:
     def is_swear(self, text, threshold=0.7):
         clean_text = self.clean(text)
         if len(clean_text) < 3:
-            return False
+            return False, 0
         
         vec = self.vectorizer.transform([clean_text])
         prob = self.model.predict_proba(vec)[0][1]
