@@ -1316,6 +1316,15 @@ https://github.com/Code-Wizaard/KomakYaar
         async def callback_handler(call: types.CallbackQuery):
             try:
                 data = call.data
+                if (data.startswith(("lock_", "post_", "panel_", "request:", "warn_punish:"))
+                        or data in ("close_panel", "close_lock_panel")):
+                    if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
+                        await self.bot.answer_callback_query(
+                            call.id,
+                            "دوست عزیز، شما دسترسی ادمین ندارید" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف",
+                            show_alert=True,
+                        )
+                        return
                 if data.startswith("captcha:"):
                     parts = data.split(":")
                     if len(parts) == 4:
@@ -1439,6 +1448,7 @@ https://github.com/Code-Wizaard/KomakYaar
                 elif data.startswith("post_"):
                     if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
                         await self.bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید", show_alert=True)
+                        return
                     reply_to = call.message.reply_to_message
                     is_comment = False
                     while reply_to:

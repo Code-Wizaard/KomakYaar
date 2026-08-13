@@ -285,7 +285,9 @@ class DataBase():
         """
         try:
             admins = await self.bot.get_chat_administrators(group_id)
-            if any(a.user.id == user_id for a in admins):
+            if user_id and any(a.user.id == user_id for a in admins):
+                return True
+            if sender_chat_id and any(a.user.id == sender_chat_id for a in admins):
                 return True
         except:
             pass
