@@ -277,12 +277,25 @@ class DataBase():
             else:
                 return "هیچ اصلی برای این کاربر در این گروه ثبت نشده :("
 
-    async def is_admin(self, group_id, user_id):
+    async def is_admin(self, group_id, user_id, sender_chat_id=None):
+        """
+        بررسی ادمین بودن کاربر.
+        اگر پیام توسط یک ادمین ناشناس (anonymous) ارسال شده باشد، sender_chat_id
+        ارسال می‌شود تا هویت واقعی (چنل/گروه) به‌عنوان ادمین بررسی شود.
+        """
         try:
             admins = await self.bot.get_chat_administrators(group_id)
-            return any(a.user.id == user_id for a in admins)
+            if any(a.user.id == user_id for a in admins):
+                return True
         except:
-            return False
+            pass
+        if sender_chat_id:
+            try:
+                member = await self.bot.get_chat_member(group_id, sender_chat_id)
+                return member.status in ["administrator", "creator"]
+            except:
+                return False
+        return False
 
 
     async def get_tags(self, group_id):

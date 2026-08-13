@@ -19,6 +19,9 @@ VERSION = "2.7.8"
 BOT_CHANNEL = "@KomakYaaar"
 BOT_GROUP = "@KomakYaarGap"
 
+# حداکثر حجم فایل (بایت) که ضدویروس برای بررسی دانلود می‌کند؛ فایل‌های بزرگ‌تر بدون دانلود رد می‌شوند
+MAX_ANTIVIRUS_FILE_SIZE = int(os.getenv("MAX_ANTIVIRUS_FILE_SIZE", 1_000_000))
+
 RUDE_ADMIN_MESSAGES = [
     "داداش تو ادمینی؟ برو باباتو ادمین کن بعد بیا اینجا حرف بزن 😏",
     "اخه تو ادمینی؟ گمشو پی کارت، اینجا جای بزرگتراست",
@@ -51,6 +54,7 @@ HELP_TEXT = """🤖 **راهنمای جامع ربات کمک‌یار**
 
 ⚡ **دستورات سریع:**
 • `راهنما` - نمایش همین منو
+• `پنل` (فقط ادمین) - پنل جامع مدیریت با دکمه‌های قفل و تنظیمات
 • `لینک` - ساخت لینک دعوت اختصاصی
 • `قوانین` - نمایش قوانین گروه
 • `فیلترها` - لیست پاسخ‌های خودکار
@@ -115,6 +119,8 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                 chat_id = message.chat.id
                 user_id = message.from_user.id if message.from_user else None
                 text = message.text or ""
+                sender_chat = getattr(message, 'sender_chat', None)
+                sender_chat_id = sender_chat.id if sender_chat else None
 
                 # بلاک بودن گروه
                 if await db.is_group_blocked(chat_id):
@@ -147,7 +153,7 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
                         except:
                             pass
                         anti_spam.reset_user(chat_id, user_id)
-                        if not await db.is_admin(chat_id, user_id):
+                        if not await db.is_admin(chat_id, user_id, sender_chat_id):
                             await bot.send_message(
                                 chat_id,
                                 f'[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇',
@@ -163,7 +169,7 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
 
                 # چک ادمین
                 if require_admin:
-                    if not await db.is_admin(chat_id, user_id):
+                    if not await db.is_admin(chat_id, user_id, sender_chat_id):
                         polite = int(await db.get_group_setting(chat_id, "POLITE_MODE", 1)) == 1
                         if polite:
                             await bot.reply_to(message, "❌ شما دسترسی ادمین ندارید.")
@@ -174,7 +180,7 @@ def handler_check(bot, db, anti_spam, require_admin: bool = False):
 
                 # چک دستورات عمومی
                 else:
-                    if int(await db.get_group_setting(chat_id, "PUBLIC_COMMANDS", 1)) != 1 and not await db.is_admin(chat_id, user_id):
+                    if int(await db.get_group_setting(chat_id, "PUBLIC_COMMANDS", 1)) != 1 and not await db.is_admin(chat_id, user_id, sender_chat_id):
                         return
 
                 
