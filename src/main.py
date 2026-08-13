@@ -414,10 +414,7 @@ class KomakYaar():
 
         # Main help keyboard - first & last categories full-width, middle paired
         items = [(cat["title"], cb) for cb, cat in self.guide_categories.items()]
-        self.help_keyboard = self.build_pretty_keyboard(
-            items,
-            back_buttons=[("🔒 قفل‌ها", "help_open_locks")]
-        )
+        self.help_keyboard = self.build_pretty_keyboard(items)
 
         # Start keyboard for private chat
         self.start_keyboard = types.InlineKeyboardMarkup(row_width=2)
@@ -439,6 +436,7 @@ class KomakYaar():
         self.join_tracker = {}
         self.raid_active = {}
         self.captchas = {}
+        self.lock_panel_origin = {}
         self.setup_events()
     
     async def apply_group_permissions(self, chat_id):
@@ -588,7 +586,7 @@ class KomakYaar():
                 kb.row(types.InlineKeyboardButton(t, callback_data=c))
         return kb
 
-    async def build_lock_panel(self, chat_id, row_width=2):
+    async def build_lock_panel(self, chat_id, row_width=3):
         kb = types.InlineKeyboardMarkup(row_width=row_width)
         locks = {
             "link": "لینک", "forward": "فوروارد", "swear": "فحش", "group": "گروه",
@@ -603,22 +601,18 @@ class KomakYaar():
             ))
         return kb
 
+    async def open_lock_panel(self, chat_id):
+        """Build the lock panel with extended row_width and a back button to the global panel.
+        The origin is remembered so toggles re-render in place."""
+        self.lock_panel_origin[chat_id] = "global"
+        lock_kb = await self.build_lock_panel(chat_id, row_width=3)
+        lock_kb.add(types.InlineKeyboardButton("🔙 برگشت به پنل جامع", callback_data="panel_main"))
+        return lock_kb
+
     async def build_global_panel(self, chat_id):
-        locks = {
-            "link": "لینک", "forward": "فوروارد", "swear": "فحش", "group": "گروه",
-            "gif": "گیف", "spam": "اسپم", "flood": "فلاد", "inline": "اینلاین",
-            "raid": "حمله", "captcha": "کپچا",
-        }
         punishment_map = {"kick": "کیک", "ban": "بن", "mute": "میوت"}
 
         lines = ["📊 **پنل جامع مدیریت گروه**\n"]
-        lines.append("🔒 **قفل‌ها:**")
-        lock_states = {}
-        for latin, persian in locks.items():
-            on = int(await self.db.get_group_setting(chat_id, latin.upper() + "_LOCK", 0)) == 1
-            lock_states[latin] = on
-            lines.append(f"• قفل {persian}: {'✅ فعال' if on else '❌ غیرفعال'}")
-        lines.append("")
         lines.append("⚙️ **تنظیمات:**")
         polite = int(await self.db.get_group_setting(chat_id, "POLITE_MODE", 1)) == 1
         public = int(await self.db.get_group_setting(chat_id, "PUBLIC_COMMANDS", 1)) == 1
@@ -634,21 +628,13 @@ class KomakYaar():
         lines.append(f"• حداکثر دعوت: {invite_max}")
         text = "\n".join(lines)
 
-        kb = types.InlineKeyboardMarkup(row_width=2)
-        for latin, persian in locks.items():
-            on = lock_states[latin]
-            kb.add(types.InlineKeyboardButton(
-                f"قفل {persian} {'✅' if on else '❌'}",
-                callback_data=f"lock_{latin}:" + ("off" if on else "on")
-            ))
-        kb.add(
-            types.InlineKeyboardButton(f"لحن باادب {'✅' if polite else '❌'}", callback_data="panel_polite"),
-            types.InlineKeyboardButton(f"دستورات عمومی {'✅' if public else '❌'}", callback_data="panel_public")
-        )
-        kb.add(
-            types.InlineKeyboardButton("📖 راهنمای گام به گام", callback_data="help_main"),
-            types.InlineKeyboardButton("بستن پنل", callback_data="close_panel")
-        )
+        kb = self.build_pretty_keyboard([
+            ("🔒 قفل‌ها", "panel_locks"),
+            (f"لحن باادب {'✅' if polite else '❌'}", "panel_polite"),
+            (f"دستورات عمومی {'✅' if public else '❌'}", "panel_public"),
+            ("📖 راهنمای گام به گام", "help_main"),
+            ("بستن پنل", "close_panel"),
+        ])
         return text, kb
 
     def setup_events(self):
@@ -877,6 +863,7 @@ class KomakYaar():
         async def lock_panel(message: types.Message):
             reply_to = message.reply_to_message
             is_comment = False
+            self.lock_panel_origin.pop(message.chat.id, None)
             lock_keyboard = await self.build_lock_panel(message.chat.id)
             while reply_to:
                 if reply_to.is_automatic_forward:
@@ -1420,14 +1407,9 @@ https://github.com/Code-Wizaard/KomakYaar
                     await self.bot.answer_callback_query(call.id, status_text if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else f"ردیفه ستون {locks.get(setting, setting)} رو {'قفل' if toggle == 'on' else 'باز'} کردم")
                     
                     
-                    if "پنل جامع مدیریت گروه" in (call.message.text or ""):
-                        text, kb = await self.build_global_panel(call.message.chat.id)
-                        await self.bot.edit_message_text(text, call.message.chat.id, call.message.message_id, parse_mode="Markdown", reply_markup=kb)
-                        return
-
-                    if "پنل قفل‌ها" in (call.message.text or ""):
-                        lock_keyboard = await self.build_lock_panel(call.message.chat.id, row_width=3)
-                        lock_keyboard.add(types.InlineKeyboardButton("🔙 برگشت به راهنما", callback_data="help_main"))
+                    origin = self.lock_panel_origin.get(call.message.chat.id)
+                    if origin == "global":
+                        lock_keyboard = await self.open_lock_panel(call.message.chat.id)
                         await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=lock_keyboard)
                         return
 
@@ -1497,6 +1479,27 @@ https://github.com/Code-Wizaard/KomakYaar
                         return
                     await self.bot.edit_message_text("پنل به دستور مدیر بسته شد!", call.message.chat.id, call.message.message_id)
                     await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
+
+                elif data == "panel_locks":
+                    if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
+                        await self.bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
+                        return
+                    lock_kb = await self.open_lock_panel(call.message.chat.id)
+                    await self.bot.edit_message_text(
+                        chat_id=call.message.chat.id,
+                        message_id=call.message.message_id,
+                        text="🔒 **پنل قفل‌ها**\n\nبرای تغییر وضعیت هر قفل روی دکمه‌های زیر بزنید:",
+                        parse_mode="Markdown",
+                        reply_markup=lock_kb
+                    )
+
+                elif data == "panel_main":
+                    if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
+                        await self.bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
+                        return
+                    self.lock_panel_origin.pop(call.message.chat.id, None)
+                    text, kb = await self.build_global_panel(call.message.chat.id)
+                    await self.bot.edit_message_text(text, call.message.chat.id, call.message.message_id, parse_mode="Markdown", reply_markup=kb)
 
                 elif data.startswith("panel_"):
                     if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
@@ -1571,25 +1574,13 @@ https://github.com/Code-Wizaard/KomakYaar
 
                 elif data.startswith("help_"):
                     if data == "help_main":
+                        self.lock_panel_origin.pop(call.message.chat.id, None)
                         await self.bot.edit_message_text(
                             chat_id=call.message.chat.id,
                             message_id=call.message.message_id,
                             text=HELP_TEXT,
                             parse_mode="Markdown",
                             reply_markup=self.help_keyboard
-                        )
-                    elif data == "help_open_locks":
-                        if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
-                            await self.bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
-                            return
-                        lock_kb = await self.build_lock_panel(call.message.chat.id, row_width=3)
-                        lock_kb.add(types.InlineKeyboardButton("🔙 برگشت به راهنما", callback_data="help_main"))
-                        await self.bot.edit_message_text(
-                            chat_id=call.message.chat.id,
-                            message_id=call.message.message_id,
-                            text="🔒 **پنل قفل‌ها**\n\nبرای تغییر وضعیت هر قفل روی دکمه‌های زیر بزنید:",
-                            parse_mode="Markdown",
-                            reply_markup=lock_kb
                         )
                     elif data in self.guide_categories:
                         cat = self.guide_categories[data]
@@ -2047,7 +2038,7 @@ https://github.com/Code-Wizaard/KomakYaar
                                 parse_mode="Markdown"
                             )
 
-                if message.document:
+                if message.document and not message.animation:
                     file_name = message.document.file_name or ""
                     ext = file_name.split('.')[-1].lower() if '.' in file_name else ""
                     file_size = message.document.file_size or 0
