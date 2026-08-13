@@ -412,10 +412,12 @@ class KomakYaar():
             for sub_cb, _ in cat.get("subs", []):
                 self.guide_sub_parent[sub_cb] = parent
 
-        # Main help keyboard - built from categories
-        self.help_keyboard = types.InlineKeyboardMarkup(row_width=2)
-        for cb, cat in self.guide_categories.items():
-            self.help_keyboard.add(types.InlineKeyboardButton(cat["title"], callback_data=cb))
+        # Main help keyboard - first & last categories full-width, middle paired
+        items = [(cat["title"], cb) for cb, cat in self.guide_categories.items()]
+        self.help_keyboard = self.build_pretty_keyboard(
+            items,
+            back_buttons=[("🔒 قفل‌ها", "help_open_locks")]
+        )
 
         # Start keyboard for private chat
         self.start_keyboard = types.InlineKeyboardMarkup(row_width=2)
@@ -562,8 +564,32 @@ class KomakYaar():
             pass
         await self.bot.send_message(chat_id, f"[{user_name}](tg://user?id={user_id}) تایید شد! خوش اومدی", parse_mode="Markdown")
 
-    async def build_lock_panel(self, chat_id):
+    def build_pretty_keyboard(self, items, back_buttons=None):
+        """Keyboard with a mixed layout: first and last items get full-width rows,
+        the middle items are paired two-per-row. `items` is a list of (text, callback_data).
+        `back_buttons` (list of (text, callback_data)) are appended as full-width rows."""
         kb = types.InlineKeyboardMarkup(row_width=2)
+        n = len(items)
+        if n <= 2:
+            rows = [items] if items else []
+        else:
+            rows = [[items[0]]]
+            for i in range(1, n - 1, 2):
+                rows.append(items[i:i + 2])
+            if (n - 1) % 2 == 1:
+                rows.append([items[-1]])
+        for row in rows:
+            if len(row) == 1:
+                kb.row(types.InlineKeyboardButton(row[0][0], callback_data=row[0][1]))
+            else:
+                kb.add(*[types.InlineKeyboardButton(t, callback_data=c) for t, c in row])
+        if back_buttons:
+            for t, c in back_buttons:
+                kb.row(types.InlineKeyboardButton(t, callback_data=c))
+        return kb
+
+    async def build_lock_panel(self, chat_id, row_width=2):
+        kb = types.InlineKeyboardMarkup(row_width=row_width)
         locks = {
             "link": "لینک", "forward": "فوروارد", "swear": "فحش", "group": "گروه",
             "gif": "گیف", "spam": "اسپم", "flood": "فلاد", "inline": "اینلاین",
@@ -1399,6 +1425,12 @@ https://github.com/Code-Wizaard/KomakYaar
                         await self.bot.edit_message_text(text, call.message.chat.id, call.message.message_id, parse_mode="Markdown", reply_markup=kb)
                         return
 
+                    if "پنل قفل‌ها" in (call.message.text or ""):
+                        lock_keyboard = await self.build_lock_panel(call.message.chat.id, row_width=3)
+                        lock_keyboard.add(types.InlineKeyboardButton("🔙 برگشت به راهنما", callback_data="help_main"))
+                        await self.bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=lock_keyboard)
+                        return
+
                     lock_keyboard = await self.build_lock_panel(call.message.chat.id)
                     
 
@@ -1546,6 +1578,19 @@ https://github.com/Code-Wizaard/KomakYaar
                             parse_mode="Markdown",
                             reply_markup=self.help_keyboard
                         )
+                    elif data == "help_open_locks":
+                        if not await self.db.is_admin(call.message.chat.id, call.from_user.id):
+                            await self.bot.answer_callback_query(call.id, "دوست عزیز، شما دسترسی ادمین ندارید" if int(await self.db.get_group_setting(call.message.chat.id, "POLITE_MODE", 1)) == 1 else "انگشت نکن بیشرف", show_alert=True)
+                            return
+                        lock_kb = await self.build_lock_panel(call.message.chat.id, row_width=3)
+                        lock_kb.add(types.InlineKeyboardButton("🔙 برگشت به راهنما", callback_data="help_main"))
+                        await self.bot.edit_message_text(
+                            chat_id=call.message.chat.id,
+                            message_id=call.message.message_id,
+                            text="🔒 **پنل قفل‌ها**\n\nبرای تغییر وضعیت هر قفل روی دکمه‌های زیر بزنید:",
+                            parse_mode="Markdown",
+                            reply_markup=lock_kb
+                        )
                     elif data in self.guide_categories:
                         cat = self.guide_categories[data]
                         if cat.get("direct"):
@@ -1557,10 +1602,8 @@ https://github.com/Code-Wizaard/KomakYaar
                                 reply_markup=self.back_keyboard
                             )
                         else:
-                            kb = types.InlineKeyboardMarkup(row_width=2)
-                            for sub_cb, sub_title in cat["subs"]:
-                                kb.add(types.InlineKeyboardButton(sub_title, callback_data=sub_cb))
-                            kb.add(types.InlineKeyboardButton("🔙 برگشت به منوی اصلی", callback_data="help_main"))
+                            items = [(sub_title, sub_cb) for sub_cb, sub_title in cat["subs"]]
+                            kb = self.build_pretty_keyboard(items, back_buttons=[("🔙 برگشت به منوی اصلی", "help_main")])
                             await self.bot.edit_message_text(
                                 chat_id=call.message.chat.id,
                                 message_id=call.message.message_id,
@@ -1570,9 +1613,7 @@ https://github.com/Code-Wizaard/KomakYaar
                             )
                     elif data in self.guide_texts:
                         parent = self.guide_sub_parent.get(data, "help_main")
-                        kb = types.InlineKeyboardMarkup(row_width=1)
-                        kb.add(types.InlineKeyboardButton("🔙 برگشت به دسته", callback_data=parent))
-                        kb.add(types.InlineKeyboardButton("🔙 برگشت به منوی اصلی", callback_data="help_main"))
+                        kb = self.build_pretty_keyboard([], back_buttons=[("🔙 برگشت به دسته", parent), ("🔙 برگشت به منوی اصلی", "help_main")])
                         await self.bot.edit_message_text(
                             chat_id=call.message.chat.id,
                             message_id=call.message.message_id,
@@ -1944,7 +1985,7 @@ https://github.com/Code-Wizaard/KomakYaar
         async def handle_messages(message:types.Message):
             try:
                 chat_id = message.chat.id
-                user_id = message.from_user.id
+                user_id = message.from_user.id if message.from_user else (self.sender_chat_id(message) or None)
                 sender_chat_id = self.sender_chat_id(message)
                 text = (message.text or message.caption) or ""
                 message.text = text
@@ -1991,17 +2032,18 @@ https://github.com/Code-Wizaard/KomakYaar
                         except ApiTelegramException:
                             pass
                         self.anti_spam.reset_user(chat_id, user_id)
+                        user_name = message.from_user.first_name if message.from_user else "کاربر"
                         if not await self.db.is_admin(chat_id, user_id, sender_chat_id):
                             await self.bot.send_message(
                                 chat_id,
-                                f'[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇',
+                                f'[{user_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} نکن! ۵ دقیقه سکوت داده شدی 🔇',
                                 parse_mode="Markdown"
                             )
                             return
                         else:
                             await self.bot.send_message(
                                 chat_id,
-                                f'[{message.from_user.first_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم',
+                                f'[{user_name}](tg://user?id={user_id}) {"اسپم" if violation == "spam" else "فلاد"} کردی، حیف که ادمینی وگرنه میوتت میکردم',
                                 parse_mode="Markdown"
                             )
 
@@ -2010,70 +2052,71 @@ https://github.com/Code-Wizaard/KomakYaar
                     ext = file_name.split('.')[-1].lower() if '.' in file_name else ""
                     file_size = message.document.file_size or 0
 
-                    supported_exts = {
-                        'txt', 'py', 'js', 'html', 'css', 'json', 'xml', 
-                        'md', 'csv', 'log', 'sh', 'bat', 'ps1', 'php', 'java',
-                        'cs', 'cpp', 'c', 'h', 'hpp', 'rb', 'pl', 'go', 'rs',
-                    }
+                    if ext != "gif":
+                        supported_exts = {
+                            'txt', 'py', 'js', 'html', 'css', 'json', 'xml', 
+                            'md', 'csv', 'log', 'sh', 'bat', 'ps1', 'php', 'java',
+                            'cs', 'cpp', 'c', 'h', 'hpp', 'rb', 'pl', 'go', 'rs',
+                        }
 
-                    if ext not in supported_exts:
-                        await self.bot.set_message_reaction(
-                            chat_id, 
-                            message.message_id, 
-                            [types.ReactionTypeEmoji('🥴')]  # Unsupported type
-                        )
-                    elif file_size > MAX_ANTIVIRUS_FILE_SIZE:
-                        await self.bot.set_message_reaction(
-                            chat_id, 
-                            message.message_id, 
-                            [types.ReactionTypeEmoji('🥴')]  # Too large to download & scan
-                        )
-                    else:
-                        await self.bot.set_message_reaction(
-                            chat_id, 
-                            message.message_id, 
-                            [types.ReactionTypeEmoji('🤔')]  # Scanning
-                        )
-                        try:
-                            # Download file
-                            file_info = await self.bot.get_file(message.document.file_id)
-                            downloaded = await self.bot.download_file(file_info.file_path)
-                            
-                            # Try to read as text (fallback to empty if binary)
+                        if ext not in supported_exts:
+                            await self.bot.set_message_reaction(
+                                chat_id, 
+                                message.message_id, 
+                                [types.ReactionTypeEmoji('🥴')]  # Unsupported type
+                            )
+                        elif file_size > MAX_ANTIVIRUS_FILE_SIZE:
+                            await self.bot.set_message_reaction(
+                                chat_id, 
+                                message.message_id, 
+                                [types.ReactionTypeEmoji('🥴')]  # Too large to download & scan
+                            )
+                        else:
+                            await self.bot.set_message_reaction(
+                                chat_id, 
+                                message.message_id, 
+                                [types.ReactionTypeEmoji('🤔')]  # Scanning
+                            )
                             try:
-                                content = downloaded.decode('utf-8', errors='ignore')
-                            except:
-                                content = str(downloaded)[:10000]  # fallback
-
-                            if content.strip():
-                                is_malware, prob = self.anti_virus.is_malware(content)
+                                # Download file
+                                file_info = await self.bot.get_file(message.document.file_id)
+                                downloaded = await self.bot.download_file(file_info.file_path)
                                 
-                                if is_malware:
-                                    await self.bot.set_message_reaction(
-                                        chat_id, 
-                                        message.message_id, 
-                                        [types.ReactionTypeEmoji('💀')]  # Malware detected
-                                    )
+                                # Try to read as text (fallback to empty if binary)
+                                try:
+                                    content = downloaded.decode('utf-8', errors='ignore')
+                                except:
+                                    content = str(downloaded)[:10000]  # fallback
+
+                                if content.strip():
+                                    is_malware, prob = self.anti_virus.is_malware(content)
+                                    
+                                    if is_malware:
+                                        await self.bot.set_message_reaction(
+                                            chat_id, 
+                                            message.message_id, 
+                                            [types.ReactionTypeEmoji('💀')]  # Malware detected
+                                        )
+                                    else:
+                                        await self.bot.set_message_reaction(
+                                            chat_id, 
+                                            message.message_id, 
+                                            [types.ReactionTypeEmoji('👍')]  # Clean
+                                        )
                                 else:
                                     await self.bot.set_message_reaction(
                                         chat_id, 
                                         message.message_id, 
-                                        [types.ReactionTypeEmoji('👍')]  # Clean
+                                        [types.ReactionTypeEmoji('❓')] # Not Sure
                                     )
-                            else:
+                            except Exception as e:
+                                error_text = f"handle_malwares: {str(e)}\n{traceback.format_exc()}"
+                                await send_error_to_owner(error_text, OWNER_ID, self.bot, "MAIN_ERROR")
                                 await self.bot.set_message_reaction(
                                     chat_id, 
                                     message.message_id, 
-                                    [types.ReactionTypeEmoji('❓')] # Not Sure
+                                    [types.ReactionTypeEmoji('🤯')] # ERR
                                 )
-                        except Exception as e:
-                            error_text = f"handle_malwares: {str(e)}\n{traceback.format_exc()}"
-                            await send_error_to_owner(error_text, OWNER_ID, self.bot, "MAIN_ERROR")
-                            await self.bot.set_message_reaction(
-                                chat_id, 
-                                message.message_id, 
-                                [types.ReactionTypeEmoji('🤯')] # ERR
-                            )
 
                 
                 while reply_to:
@@ -2142,18 +2185,18 @@ https://github.com/Code-Wizaard/KomakYaar
 
 
                 if (not len(swears) == 0) or is_swear:
-                    await self.bot.reply_to(comment_channel if is_comment else message, f"[{message.from_user.first_name}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم", parse_mode="Markdown")
+                    await self.bot.reply_to(comment_channel if is_comment else message, f"[{message.from_user.first_name if message.from_user else 'کاربر'}](tg://user?id={user_id}) عزیزم قرار شد دیگه فحش ندیم بیاید باهم دوست باشیم", parse_mode="Markdown")
                     await self.bot.delete_message(chat_id, message.message_id)
 
                 toggle = await self.db.get_group_setting(message.chat.id, "PUBLIC_COMMANDS", 1)
-                if not await self.db.is_admin(message.chat.id, message.from_user.id, sender_chat_id) and int(toggle) == 0:
+                if not await self.db.is_admin(message.chat.id, user_id, sender_chat_id) and int(toggle) == 0:
                     return
 
                 if text.startswith("db:"):
                     await self.bot.reply_to(message, "دوست عزیز، شما اونر نیستید" if int(await self.db.get_group_setting(message.chat.id, "POLITE_MODE", 1)) == 1 else "گوه نخور بابا این گوزا به تو نیومده")
 
                 if text == "کمک یار" or text == "کمک‌یار":
-                    await self.bot.reply_to(message, f"{message.from_user.first_name}")
+                    await self.bot.reply_to(message, f"{message.from_user.first_name if message.from_user else 'کاربر'}")
 
 
                 tags = await self.db.get_tags(chat_id)
@@ -2216,7 +2259,10 @@ https://github.com/Code-Wizaard/KomakYaar
                     await self.bot.delete_message(msg.chat.id, msg.message_id)
 
                 if message.reply_to_message:
-                    target_id = message.reply_to_message.from_user.id
+                    reply_target = message.reply_to_message.from_user
+                    if not reply_target:
+                        reply_target = getattr(message.reply_to_message, 'sender_chat', None)
+                    target_id = reply_target.id if reply_target else None
 
                     # ADD TAG (فیلتر)
                     if text.startswith("فیلتر") and await self.db.is_admin(chat_id, user_id, sender_chat_id):
@@ -2249,7 +2295,7 @@ https://github.com/Code-Wizaard/KomakYaar
                         for admin in admins:
                             if not admin.user.is_bot and admin.user.id != self.me.id:
                                 try:
-                                    await self.bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر [{message.from_user.first_name}](tg://user?id={user_id}) در گروه با ایدی {chat_id}\n فرد گزارش شده : [{target.first_name}](tg://user?id={target_id})\n متن پیام ارسالی :\n > {message.reply_to_message.text}", reply_markup=markup, parse_mode="Markdown")
+                                    await self.bot.send_message(admin.user.id, f"گزارش دریافتی از کاربر [{message.from_user.first_name if message.from_user else 'کاربر'}](tg://user?id={user_id}) در گروه با ایدی {chat_id}\n فرد گزارش شده : [{target.first_name}](tg://user?id={target_id})\n متن پیام ارسالی :\n > {message.reply_to_message.text}", reply_markup=markup, parse_mode="Markdown")
                                 except:
                                     pass
 
