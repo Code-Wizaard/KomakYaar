@@ -586,7 +586,7 @@ class KomakYaar():
                 kb.row(types.InlineKeyboardButton(t, callback_data=c))
         return kb
 
-    async def build_lock_panel(self, chat_id, row_width=3):
+    async def build_lock_panel(self, chat_id, row_width=5):
         kb = types.InlineKeyboardMarkup(row_width=row_width)
         locks = {
             "link": "لینک", "forward": "فوروارد", "swear": "فحش", "group": "گروه",
@@ -605,7 +605,7 @@ class KomakYaar():
         """Build the lock panel with extended row_width and a back button to the global panel.
         The origin is remembered so toggles re-render in place."""
         self.lock_panel_origin[chat_id] = "global"
-        lock_kb = await self.build_lock_panel(chat_id, row_width=3)
+        lock_kb = await self.build_lock_panel(chat_id, row_width=5)
         lock_kb.add(types.InlineKeyboardButton("🔙 برگشت به پنل جامع", callback_data="panel_main"))
         return lock_kb
 

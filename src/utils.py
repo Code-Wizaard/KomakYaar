@@ -15,7 +15,7 @@ BALE_TOKEN = os.getenv("BALE_TOKEN")
 DB_PATH = os.getenv("DB_PATH", "groups.db")
 SWEARS_PATH = os.getenv("SWEARS_PATH", "swears.txt")
 OWNER_ID = int(os.getenv("OWNER_ID"))
-VERSION = "2.9.11"
+VERSION = "2.9.12"
 BOT_CHANNEL = "@KomakYaaar"
 BOT_GROUP = "@KomakYaarGap"
 

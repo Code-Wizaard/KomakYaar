@@ -292,11 +292,22 @@ class DataBase():
         except:
             pass
         if sender_chat_id:
+            # Anonymous admin posting as the group itself
+            if sender_chat_id == group_id:
+                return True
             try:
                 member = await self.bot.get_chat_member(group_id, sender_chat_id)
-                return member.status in ["administrator", "creator"]
+                if member.status in ["administrator", "creator"]:
+                    return True
             except:
-                return False
+                pass
+            # Anonymous posts from the group's linked channel are always admin
+            try:
+                chat = await self.bot.get_chat(group_id)
+                if sender_chat_id == getattr(chat, 'linked_chat_id', None):
+                    return True
+            except:
+                pass
         return False
 
 
